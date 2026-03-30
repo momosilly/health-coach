@@ -6,8 +6,11 @@ import {
   Text,
   TextInput,
   View,
+  Pressable, 
+  Image
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { waitForServer, fetchHealthInsight } from '../../src/HealthClient';
 
 export default function App() {
@@ -16,6 +19,7 @@ export default function App() {
   const [insight, setInsight] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const router = useRouter();
 
   // Wait for the Kotlin server on mount
   useEffect(() => {
@@ -51,6 +55,15 @@ export default function App() {
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Health Coach</Text>
+
+      <Pressable
+        onPress={() => router.push('settings')}
+      >
+        <Image 
+          source={require('../../assets/setting.png')}
+          style={{ height: 24, width: 24 }}
+        />
+      </Pressable>
 
       <TextInput
         style={styles.input}
