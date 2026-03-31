@@ -1,13 +1,21 @@
 const BASE_URL = 'http://localhost:8765';
 
-// ─── Types ────────
+// ─── Types ──────────
 
 export interface HealthInsightResult {
   insight: string;
   raw: Record<string, unknown>;
 }
 
-// ─── ping ───────
+export interface PermissionsResult {
+  granted: number;
+  total: number;
+  all_granted: boolean;
+  status_text: string;
+  android_14_plus: boolean;
+}
+
+// ─── ping ──────────
 
 /**
  * Check whether the Kotlin health server is up.
@@ -22,7 +30,7 @@ export async function ping(): Promise<boolean> {
   }
 }
 
-// ─── waitForServer ─────
+// ─── waitForServer ──────────
 
 /**
  * Poll until the Kotlin server is reachable, then resolve.
@@ -42,23 +50,48 @@ export async function waitForServer(
   return false;
 }
 
-// ─── fetchHealthInsight ────────
+// ─── getPermissions ──────────
 
-/**@param userNote*/
+/**
+ * Get the current Health Connect permission status.
+ * Use this to display permission count and status text in your RN screen.
+ */
+export async function getPermissions(): Promise<PermissionsResult> {
+  const res = await fetch(`${BASE_URL}/permissions`, { method: 'GET' });
+  if (!res.ok) throw new Error(`HealthServer error ${res.status}`);
+  return res.json() as Promise<PermissionsResult>;
+}
 
+// ─── openHealthConnect ──────────
+
+/**
+ * Tell the Kotlin server to open Health Connect so the user can manage permissions.
+ * On Android 14+ opens the built-in Health Connect settings.
+ * On Android 13 and below opens the Health Connect app (or Play Store if not installed).
+ */
+export async function openHealthConnect(): Promise<void> {
+  const res = await fetch(`${BASE_URL}/permissions/open`, { method: 'POST' });
+  if (!res.ok) throw new Error(`HealthServer error ${res.status}`);
+}
+
+// ─── fetchHealthInsight ──────
+
+/**
+ * @param userNote  Optional free-text note from the user (e.g. "I feel tired today").
+ */
 export async function fetchHealthInsight(
-  userNote: string = '',
+  userNote: string,
 ): Promise<HealthInsightResult> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 120000); // 120s
+  if (!userNote) {
+    throw new Error('Please enter a note before getting insight.');
+  }
 
   const res = await fetch(`${BASE_URL}/healthdata`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_note: userNote }),
-      signal: controller.signal,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_note: userNote }),
   });
-  clearTimeout(timeoutId);
+
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`HealthServer error ${res.status}: ${text}`);
