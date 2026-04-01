@@ -13,6 +13,39 @@ load_dotenv()
 API_KEY = os.getenv("GEMINI_API_KEY")
 client = genai.Client()
 
+# In-memory personalization store
+# On Render.com this persists as long as the server is running
+personalization_message = "Provide a helpful, motivating, and data-backed answer."
+
+# ── GET /personalization ───────────────
+@app.route('/personalization', methods=['GET'])
+def get_personalization():
+    return jsonify({
+        'status': 'success',
+        'personalization': personalization_message
+    }), 200
+
+# ── POST /personalization ──────────────
+@app.route('/personalization', methods=['POST'])
+def set_personalization():
+    global personalization_message
+    try:
+        data = request.get_json()
+        message = data.get('personalization', '').strip()
+        if not message:
+            return jsonify({
+                'status': 'error',
+                'message': 'personalization field is required'
+            }), 400
+        personalization_message = message
+        return jsonify({
+            'status': 'success',
+            'personalization': personalization_message
+        }), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 400
+
+# ── POST /healthdata ───────────────────
 @app.route('/healthdata', methods=['POST']) 
 def receive_health_data(): 
     try: 
@@ -56,13 +89,11 @@ def receive_health_data():
         if sleep_sessions:
             response_data['sleep_sessions'] = len(sleep_sessions)
         if sleep_stages:
-            # Calculate total minutes per stage type
             for stage in sleep_stages:
                 stage_type = stage.get('type', 'Unknown')
                 duration = stage.get('duration_minutes', 0)
                 stage_minutes[stage_type] = stage_minutes.get(stage_type, 0) + duration
     
-            # Print in a nice order with emojis
             sleep_stages_formatted = []
             stage_order = ['LIGHT', 'DEEP', 'REM', 'AWAKE', 'SLEEPING', 'OUT_OF_BED', 'UNKNOWN']
             for stage_name in stage_order:
@@ -78,17 +109,16 @@ def receive_health_data():
                 config=types.GenerateContentConfig(
                     system_instruction="You are a health coach AI"
                 ),
-                contents=f"The following data represents the user's last 24 hours of health metrics.\n\n {json.dumps(response_data, indent=2)}\n\n User's question: {user_question}\n\n Provide a helpful, motivating, and data-backed answer."
-                )
+                contents=f"The following data represents the user's last 24 hours of health metrics.\n\n{json.dumps(response_data, indent=2)}\n\nUser's question: {user_question}\n\n{personalization_message}"
+            )
             print(response.text)
             response_data['gemini_insight'] = response.text.strip()
 
         GeminiResponse()
         return jsonify({
-        'status': 'success',
-        'data_received': response_data
+            'status': 'success',
+            'data_received': response_data
         }), 200
-
 
     except Exception as e:
         print(f"error: {str(e)}")
