@@ -1,4 +1,5 @@
 const BASE_URL = 'http://localhost:8765';
+const BACKEND_URL = 'https://health-coach-q3av.onrender.com';
 
 // ─── Types ──────────
 
@@ -74,9 +75,41 @@ export async function openHealthConnect(): Promise<void> {
   if (!res.ok) throw new Error(`HealthServer error ${res.status}`);
 }
 
-// ─── fetchHealthInsight ──────
+// ─── fetchHealthInsight ──────────
+
+// ─── getPersonalization ──────────
 
 /**
+ * Get the current personalization message from the backend.
+ */
+export async function getPersonalization(): Promise<string> {
+  const res = await fetch(`${BACKEND_URL}/personalization`, { method: 'GET' });
+  if (!res.ok) throw new Error(`Backend error ${res.status}`);
+  const json = await res.json() as { personalization: string };
+  return json.personalization;
+}
+
+// ─── savePersonalization ──────────
+
+/**
+ * Save the personalization message to the backend.
+ * This message will be appended to every Gemini prompt going forward.
+ *
+ * @param message  The personalization message e.g. "I am a 25 year old male training for a marathon"
+ */
+export async function savePersonalization(message: string): Promise<void> {
+  const res = await fetch(`${BACKEND_URL}/personalization`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ personalization: message }),
+  });
+  if (!res.ok) throw new Error(`Backend error ${res.status}`);
+}
+
+/**
+ * Collect the last 24 h of health data from Health Connect and return
+ * Gemini's coaching insight.
+ *
  * @param userNote  Optional free-text note from the user (e.g. "I feel tired today").
  */
 export async function fetchHealthInsight(
