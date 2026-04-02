@@ -14,12 +14,12 @@ export default function settings() {
                 <Text>Permissions</Text>
             </Pressable>
             <Pressable
-                
+                onPress={() => {router.push('settings/personalization')}}
             >
                 <Text>Personalization</Text>
             </Pressable>
             <Pressable
-                
+                onPress={() => {router.push('settings/about')}}
             >
                 <Text>About</Text>
             </Pressable>
