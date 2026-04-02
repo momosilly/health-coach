@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Text, View, TextInput, Pressable, ToastAndroid } from "react-native";
+import { Text, View, TextInput, Pressable, ToastAndroid, BackHandler } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getPreference } from "../../../src/storage/keys";
 import { Host, Switch } from "@expo/ui/jetpack-compose";
 import { savePersonalization } from "../../../src/HealthClient";
+import { useRouter } from "expo-router";
 
 export default function personalization() {
+    const router = useRouter();
     const [checked, setChecked] = useState(false);
     const [text, setText] = useState("");
     const key: string = getPreference('personalization')
@@ -36,6 +38,21 @@ export default function personalization() {
         };
 
         textValue();
+
+        // Hardware back button navigates back to settings instead of home
+        const onBackPress = () => {
+            router.back();
+            return true;
+        }
+
+        const subscription = BackHandler.addEventListener(
+            "hardwareBackPress",
+            onBackPress
+        )
+
+        const removeSubscription = () => {return subscription.remove();}
+
+        removeSubscription();
     }, [])
 
     return (

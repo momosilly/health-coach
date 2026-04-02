@@ -101,7 +101,7 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: '#fff' },
+  container: { flex: 1, padding: 24 },
   center:    { flex: 1, alignItems: 'center', justifyContent: 'center' },
   title:     { fontSize: 24, fontWeight: 'bold', marginBottom: 24 },
   input:     { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 12, marginBottom: 16 },
