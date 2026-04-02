@@ -5,13 +5,15 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  View,
   Pressable, 
   Image
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { waitForServer, fetchHealthInsight } from '../../src/HealthClient';
+import { getPreference } from '../../src/storage/keys';
+import { savePersonalization } from '../../src/HealthClient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function App() {
   const [serverReady, setServerReady] = useState(false);
@@ -27,8 +29,25 @@ export default function App() {
       setServerReady(ready);
       if (!ready) setError('Could not connect to health server.');
     });
+
+    // Get personalization message from asyncstorage
+    const syncServer = async () => {
+      try {
+        const key = getPreference('personalization');
+        if (!key) return;
+        const stored = await AsyncStorage.getItem(key);
+        if (!stored) return;
+        await savePersonalization(stored);
+      } catch (err) {
+        console.warn("Personalization sync failed", err);
+        setTimeout(syncServer, 5000);
+      }
+    };
+
+    syncServer();
   }, []);
 
+  // Handle Gemini insight
   const handleSend = async () => {
     setLoading(true);
     setInsight('');

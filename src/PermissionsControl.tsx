@@ -6,6 +6,7 @@ export function usePermissions() {
   const [permissions, setPermissions] = useState<PermissionsResult | null>(null);
   const appState = useRef(AppState.currentState);
 
+  // Load permission status
   const refresh = async () => {
     try {
       const perms = await getPermissions();
