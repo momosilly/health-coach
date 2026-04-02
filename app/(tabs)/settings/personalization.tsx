@@ -1,17 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Text, View, TextInput, Pressable } from "react-native";
+import { Text, View, TextInput, Pressable, ToastAndroid } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getPreference } from "../../../src/storage/keys";
 import { Host, Switch } from "@expo/ui/jetpack-compose";
 import { savePersonalization } from "../../../src/HealthClient";
-import { store } from "expo-router/build/global-state/router-store";
 
 export default function personalization() {
     const [checked, setChecked] = useState(false);
     const [text, setText] = useState("");
     const key: string = getPreference('personalization')
     const value: string = text
+
+    const showToast = () => {
+        ToastAndroid.show('Personalization settings has been saved', ToastAndroid.SHORT);
+    }
 
     // Get the state of the switch
     useEffect(() => {
@@ -68,6 +71,7 @@ export default function personalization() {
                     onPress={async () => {
                         savePersonalization(text)
                         await AsyncStorage.setItem(key, value)
+                        showToast();
                     }}
                 >
                     <Text>Save</Text>
