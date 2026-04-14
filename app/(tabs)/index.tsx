@@ -100,12 +100,14 @@ export default function App() {
 
         {loading && <ActivityIndicator style={{ marginTop: 16 }} />}
         {error  !== '' && <Text style={styles.error}>{error}</Text>}
-        {insight !== '' || loading ? (
+        {insight !== '' ? (
           <ScrollView>
             <Text style={styles.insight}>
               {insight}
             </Text>
           </ScrollView>
+          ) : loading ? (
+            loading
           ) : (
           <View style={{marginVertical: 'auto'}}>
             <GradientText 
@@ -114,7 +116,7 @@ export default function App() {
               style={{fontSize: 24, fontWeight: 'condensedBold', paddingBottom: 100}}
             />
           </View>
-        )}
+          )}
 
           <Animated.View style={{
             position: 'absolute',

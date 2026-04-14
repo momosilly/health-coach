@@ -33,10 +33,7 @@ def set_personalization():
         data = request.get_json()
         message = data.get('personalization', '').strip()
         if not message:
-            return jsonify({
-                'status': 'error',
-                'message': 'personalization field is required'
-            }), 400
+            message = personalization_message
         personalization_message = message
         return jsonify({
             'status': 'success',

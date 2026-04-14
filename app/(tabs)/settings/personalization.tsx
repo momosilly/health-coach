@@ -11,8 +11,6 @@ export default function personalization() {
     const router = useRouter();
     const [checked, setChecked] = useState(false);
     const [text, setText] = useState("");
-    const key: string = getPreference('personalization')
-    const value: string = text
 
     const showToast = () => {
         ToastAndroid.show('Personalization settings has been saved', ToastAndroid.SHORT);
@@ -31,10 +29,9 @@ export default function personalization() {
 
         // Get text instruction value
         const textValue = async () => {
-            const stored = await AsyncStorage.getItem(getPreference('text_value'));
+            const stored = await AsyncStorage.getItem(getPreference('personalization'));
             if (!stored) return;
-            const parsed = JSON.parse(stored);
-            setText(parsed);
+            setText(JSON.parse(stored));
         };
 
         textValue();
@@ -77,19 +74,17 @@ export default function personalization() {
                 <Text>Custom instructions</Text>
                 <TextInput 
                     value={text}
-                    onChangeText={async (nextText: string) => {
-                        setText(nextText);
-                        await AsyncStorage.setItem(getPreference('text_value'), JSON.stringify(nextText));
-                    }} // store immdeiate UI state and update storage
+                    onChangeText={setText}
                     style={{borderColor: '#000', borderWidth: 1, borderStyle: 'solid'}}
                     editable={checked}
                 />
                 <Pressable
                     onPress={async () => {
-                        savePersonalization(text)
-                        await AsyncStorage.setItem(key, value)
+                        await savePersonalization(text)
+                        await AsyncStorage.setItem(getPreference('personalization'), JSON.stringify(text))
                         showToast();
                     }}
+                    disabled={checked == true && text == "" ? true : false}
                 >
                     <Text>Save</Text>
                 </Pressable>
