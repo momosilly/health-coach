@@ -7,6 +7,7 @@ import { getPreference } from '../../src/storage/keys';
 import { savePersonalization } from '../../src/HealthClient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GradientText } from '../(components)/GradientText';
+import Markdown from 'react-native-markdown-display';
 
 export default function App() {
   const [serverReady, setServerReady] = useState(false);
@@ -70,6 +71,7 @@ export default function App() {
     try {
       const result = await fetchHealthInsight(userNote);
       setInsight(result.insight);
+      setUserNote('');
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -102,9 +104,25 @@ export default function App() {
         {error  !== '' && <Text style={styles.error}>{error}</Text>}
         {insight !== '' ? (
           <ScrollView>
-            <Text style={styles.insight}>
+            <Markdown style={{
+              body: {
+                  marginTop: 63, 
+                  fontSize: 15, 
+                  lineHeight: 22, 
+                  color: '#fff',
+                  borderWidth: 2,
+                  borderColor: '#ec6363',
+                  borderRadius: 20,
+                  padding: 10,
+                  backgroundColor: '#ec6363',
+                  bottom: 55,
+              },
+              strong: {fontWeight: 'bold'},
+              bullet_list: {marginVertical: 4}
+            }}
+            >
               {insight}
-            </Text>
+            </Markdown>
           </ScrollView>
           ) : loading ? (
             loading
@@ -171,17 +189,6 @@ const styles = StyleSheet.create({
     flex: 1, 
     alignItems: 'center', 
     justifyContent: 'center' 
-  },
-  insight: { 
-    marginTop: 24, 
-    fontSize: 15, 
-    lineHeight: 22, 
-    color: '#fff',
-    borderWidth: 2,
-    borderColor: '#ec6363',
-    borderRadius: 20,
-    padding: 10,
-    backgroundColor: '#ec6363'
   },
   error: { 
     marginTop: 16, 
