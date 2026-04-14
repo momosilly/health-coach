@@ -16,6 +16,7 @@ export default function App() {
   const [error, setError] = useState('');
   const router = useRouter();
   const keyboardHeight = useRef(new Animated.Value(0)).current;
+  const [inputHeight, setInputHeight] = useState(0);
 
   // Wait for the Kotlin server on mount
   useEffect(() => {
@@ -57,7 +58,7 @@ export default function App() {
         useNativeDriver: false
       }).start();
     });
-    
+
     return () => { show.remove(); hide.remove(); };
   }, []);
 
@@ -97,14 +98,40 @@ export default function App() {
         />
         </Pressable>
 
-        <View style={{marginVertical: 'auto'}}>
-          <GradientText 
-            text= {`Hello there,${"\n"}What can I help you with today?`}
-            colors={['#2AB8A2', '#135248']}
-            style={{fontSize: 24, fontWeight: 'condensedBold', paddingBottom: 100}}
-          />
-        </View>
-          <Animated.View style={[styles.inputRow, {bottom: Animated.add(new Animated.Value(35), keyboardHeight)}]}>
+        {loading && <ActivityIndicator style={{ marginTop: 16 }} />}
+        {error  !== '' && <Text style={styles.error}>{error}</Text>}
+        {insight !== '' || loading ? (
+          <ScrollView>
+            <Text style={styles.insight}>
+              {insight}
+            </Text>
+          </ScrollView>
+          ) : (
+          <View style={{marginVertical: 'auto'}}>
+            <GradientText 
+              text= {`Hello there,${"\n"}What can I help you with today?`}
+              colors={['#2AB8A2', '#135248']}
+              style={{fontSize: 24, fontWeight: 'condensedBold', paddingBottom: 100}}
+            />
+          </View>
+        )}
+
+          <Animated.View style={{
+            position: 'absolute',
+            bottom: Animated.add(
+              new Animated.Value(35 + inputHeight + 8),
+              keyboardHeight
+            ),
+            left: 24,
+            right: 24
+          }}
+          >
+            <Text style={{ fontSize: 10, color: '#999', textAlign: 'center' }}>Health coach is an AI and may make mistakes. This is not medical advice</Text>
+          </Animated.View>
+          <Animated.View 
+            style={[styles.inputRow, {bottom: Animated.add(new Animated.Value(35), keyboardHeight)}]}
+            onLayout={(e) => setInputHeight(e.nativeEvent.layout.height)}
+            >
             <TextInput 
               style={styles.input}
               placeholder='Ask your health coach'
@@ -128,10 +155,6 @@ export default function App() {
               />
             </Pressable>
           </Animated.View>
-    
-          {loading && <ActivityIndicator style={{ marginTop: 16 }} />}
-          {error  !== '' && <Text style={styles.error}>{error}</Text>}
-          {insight !== '' && <ScrollView><Text style={styles.insight}>{insight}</Text></ScrollView>}
       </SafeAreaView>
      </View>
   );
@@ -151,7 +174,12 @@ const styles = StyleSheet.create({
     marginTop: 24, 
     fontSize: 15, 
     lineHeight: 22, 
-    color: '#333' 
+    color: '#fff',
+    borderWidth: 2,
+    borderColor: '#ec6363',
+    borderRadius: 20,
+    padding: 10,
+    backgroundColor: '#ec6363'
   },
   error: { 
     marginTop: 16, 
