@@ -3,6 +3,7 @@ import { Text, Pressable, BackHandler, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { usePermissions } from "../../../src/PermissionsControl";
 import { useRouter } from "expo-router";
+import { globalStyles } from "../../../src/styles";
 
 export default function permissions() {
     const router = useRouter();
@@ -25,7 +26,7 @@ export default function permissions() {
 
     return (
         <SafeAreaView>
-            <Text style={styles.title}>Permissions</Text>
+            <Text style={globalStyles.title}>Permissions</Text>
             <View style={{ alignSelf: 'center' }}>
                 <Text style={styles.statusText}>{permissions?.status_text}</Text>
             </View>
@@ -40,12 +41,6 @@ export default function permissions() {
 }
 
 const styles = StyleSheet.create({
-    title: {
-        fontSize: 25,
-        fontWeight: 'bold',
-        marginLeft: 13,
-        marginTop: 17
-    },
     statusText: {
         marginTop: 30,
         borderWidth: 1,

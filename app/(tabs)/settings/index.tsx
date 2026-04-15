@@ -2,14 +2,14 @@ import React from "react";
 import { Text, Pressable, View, Image, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { height } from "@expo/ui/jetpack-compose/modifiers";
+import { globalStyles } from "../../../src/styles";
 
 export default function settings() { 
     const router = useRouter();
 
     return (
         <SafeAreaView>
-            <Text style={styles.title}>Settings</Text>
+            <Text style={globalStyles.title}>Settings</Text>
             <View style={{ marginTop: 17 }}>
                 <Pressable
                     onPress={() => {router.push('settings/permissions')}}
@@ -40,12 +40,6 @@ export default function settings() {
 }
 
 const styles = StyleSheet.create({
-    title: {
-        fontSize: 25,
-        fontWeight: 'bold',
-        marginLeft: 13,
-        marginTop: 17
-    },
     pressable: {
         flexDirection: 'row',
         marginTop: 10,

@@ -8,6 +8,7 @@ import { savePersonalization } from '../../src/HealthClient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GradientText } from '../(components)/GradientText';
 import Markdown from 'react-native-markdown-display';
+import { globalStyles } from '../../src/styles';
 
 export default function App() {
   const [serverReady, setServerReady] = useState(false);
@@ -165,8 +166,8 @@ export default function App() {
               disabled={loading || !serverReady || !userNote}
               style={({ pressed }) => [
               styles.sendButton,
-              (!userNote || loading || !serverReady) && styles.sendButtonDisabled,
-              pressed && styles.sendButtonPressed
+              (!userNote || loading || !serverReady) && globalStyles.pressableDisabled,
+              pressed && globalStyles.pressablePressed
               ]}
               >
               <Image 
@@ -231,11 +232,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: 8,
     marginBottom: 2
-  },
-  sendButtonDisabled: {
-    backgroundColor: '#ccc'
-  },
-  sendButtonPressed: {
-    opacity: 0.8
   },
 });
