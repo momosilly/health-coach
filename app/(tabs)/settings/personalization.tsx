@@ -69,7 +69,6 @@ export default function personalization() {
                         value={checked}
                         onCheckedChange={async (nextChecked: boolean) => {
                             setChecked(nextChecked); // store immediate UI state
-                            await AsyncStorage.setItem(getPreference("switch_state"), JSON.stringify(nextChecked));
                         }}
                         colors={{
                             checkedTrackColor: "#2ab8a2",
@@ -92,6 +91,7 @@ export default function personalization() {
                     onPress={async () => {
                         await savePersonalization(text)
                         await AsyncStorage.setItem(getPreference('personalization'), JSON.stringify(text))
+                        await AsyncStorage.setItem(getPreference("switch_state"), JSON.stringify(checked));
                         showToast();
                     }}
                     style={({pressed}) => [
