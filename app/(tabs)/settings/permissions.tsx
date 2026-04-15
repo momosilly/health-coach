@@ -32,7 +32,10 @@ export default function permissions() {
             </View>
             <Pressable
                 onPress={openHealthConnect}
-                style={styles.pressable}
+                style={({pressed}) => [
+                    styles.pressable,
+                    pressed && globalStyles.pressablePressed
+                ]}
             >
                 <Text style={{ fontSize: 16, color: '#fff' }}>Open Health Connect</Text>
             </Pressable>
