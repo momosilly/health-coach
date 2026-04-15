@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Text, View, TextInput, Pressable, ToastAndroid, BackHandler } from "react-native";
+import { Text, View, TextInput, Pressable, ToastAndroid, BackHandler, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getPreference } from "../../../src/storage/keys";
-import { Host, Switch } from "@expo/ui/jetpack-compose";
+import { Host, Row, Switch } from "@expo/ui/jetpack-compose";
 import { savePersonalization } from "../../../src/HealthClient";
 import { useRouter } from "expo-router";
+import { globalStyles } from "../../../src/styles";
 
 export default function personalization() {
     const router = useRouter();
@@ -54,29 +55,38 @@ export default function personalization() {
 
     return (
         <SafeAreaView>
-            <View>
-                <Text>Enable customization</Text>
-                <Text>Customize how Healthcoach AI responds to you</Text>
-                <Host matchContents>
-                    <Switch
-                    value={checked}
-                    onCheckedChange={async (nextChecked: boolean) => {
-                        setChecked(nextChecked); // store immediate UI state
-                        await AsyncStorage.setItem(getPreference("switch_state"), JSON.stringify(nextChecked));
-                    }}
-                    colors={{
-                        checkedTrackColor: "#2ab8a2",
-                    }}
-                />
-                </Host>
+            <Text style={globalStyles.title}>Personalization</Text>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ flex: 1 }}>
+                <Text style={styles.text}>Enable customization</Text>
+                <Text style={{ fontSize: 13, color: '#757575', marginLeft: 20 }}>Customize how Healthcoach AI responds to you</Text>
+                </View>
+
+                <View style={{ width: 66 }}>
+                    <Host matchContents>
+                        <Switch
+                        value={checked}
+                        onCheckedChange={async (nextChecked: boolean) => {
+                            setChecked(nextChecked); // store immediate UI state
+                            await AsyncStorage.setItem(getPreference("switch_state"), JSON.stringify(nextChecked));
+                        }}
+                        colors={{
+                            checkedTrackColor: "#2ab8a2",
+                        }}
+                    />
+                    </Host>
+                </View>
             </View>
-            <View>
-                <Text>Custom instructions</Text>
+
+            <View style={{marginTop: 10}}>
+                <Text style={[styles.text, {marginBottom: 8}]}>Custom instructions</Text>
                 <TextInput 
                     value={text}
                     onChangeText={setText}
-                    style={{borderColor: '#000', borderWidth: 1, borderStyle: 'solid'}}
+                    style={styles.textInput}
                     editable={checked}
+                    multiline
                 />
                 <Pressable
                     onPress={async () => {
@@ -84,11 +94,46 @@ export default function personalization() {
                         await AsyncStorage.setItem(getPreference('personalization'), JSON.stringify(text))
                         showToast();
                     }}
-                    disabled={checked == true && text == "" ? true : false}
+                    style={({pressed}) => [
+                        styles.pressable,
+                        pressed && globalStyles.pressablePressed
+                    ]}
                 >
-                    <Text>Save</Text>
+                    <Text style={{ color: '#fff', fontSize: 16 }}>Save</Text>
                 </Pressable>
             </View>
         </SafeAreaView>
     )
 }
+
+const styles = StyleSheet.create({
+    text: {
+        fontSize: 16,
+        color: '#333',
+        marginLeft: 20,
+        marginTop: 18
+    },
+    textInput: {
+        borderColor: '#D9D9D9', 
+        borderWidth: 1, 
+        borderStyle: 'solid',
+        width: 370,
+        height: 80,
+        borderRadius: 8,
+        alignSelf: 'center',
+        textAlignVertical: 'top',
+        paddingVertical: 10,
+        paddingHorizontal: 8
+    },
+    pressable: {
+        width: 80,
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 13,
+        backgroundColor: '#2AB8A2',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 20,
+        marginLeft: 20
+    },
+})
