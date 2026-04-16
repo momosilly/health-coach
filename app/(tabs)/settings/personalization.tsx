@@ -7,11 +7,16 @@ import { Host, Row, Switch } from "@expo/ui/jetpack-compose";
 import { savePersonalization } from "../../../src/HealthClient";
 import { useRouter } from "expo-router";
 import { globalStyles } from "../../../src/styles";
+import Dropdown from "../../(components)/DropdownMenu";
 
 export default function personalization() {
     const router = useRouter();
     const [checked, setChecked] = useState(false);
-    const [text, setText] = useState("");
+    const [personalization, setPersonalization] = useState("");
+    const [age, setAge] = useState('');
+    const [weight, setWeight] = useState('');
+    const [goal, setGoal] = useState('');
+    const [length, setLength] = useState('');
 
     const showToast = () => {
         ToastAndroid.show('Personalization settings has been saved', ToastAndroid.SHORT);
@@ -32,7 +37,7 @@ export default function personalization() {
         const textValue = async () => {
             const stored = await AsyncStorage.getItem(getPreference('personalization'));
             if (!stored) return;
-            setText(JSON.parse(stored));
+            setPersonalization(JSON.parse(stored));
         };
 
         textValue();
@@ -59,8 +64,8 @@ export default function personalization() {
 
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={{ flex: 1 }}>
-                <Text style={styles.text}>Enable customization</Text>
-                <Text style={{ fontSize: 13, color: '#757575', marginLeft: 20 }}>Customize how Healthcoach AI responds to you</Text>
+                    <Text style={[styles.text, {marginLeft: 20}]}>Enable customization</Text>
+                    <Text style={{ fontSize: 13, color: '#757575', marginLeft: 20 }}>Customize how Healthcoach AI responds to you</Text>
                 </View>
 
                 <View style={{ width: 66 }}>
@@ -79,18 +84,67 @@ export default function personalization() {
             </View>
 
             <View style={{marginTop: 10}}>
-                <Text style={[styles.text, {marginBottom: 8}]}>Custom instructions</Text>
+                <Text style={[styles.text, {marginBottom: 8, marginLeft: 20}]}>Custom instructions</Text>
                 <TextInput 
-                    value={text}
-                    onChangeText={setText}
-                    style={styles.textInput}
+                    value={personalization}
+                    onChangeText={setPersonalization}
+                    style={[styles.textInput, {alignSelf: 'center', marginTop: 0, width: 370, height: 80}]}
                     editable={checked}
                     multiline
                 />
+                <View style={{flexDirection: 'row', justifyContent: 'space-around'}}>
+                    <View style={{flex: 1, alignItems: 'center'}}>
+                        <Text style={styles.text}>Age</Text>
+                        <TextInput 
+                            value={age}
+                            onChangeText={setAge}
+                            style={styles.textInput}
+                            editable={checked}
+                            keyboardType="numeric"
+                        />
+                    </View>
+                    
+                    <View style={{flex: 1, alignItems: 'center'}}>
+                        <Text style={styles.text}>Weight (kg)</Text>
+                        <TextInput 
+                            value={weight}
+                            onChangeText={setWeight}
+                            style={styles.textInput}
+                            editable={checked}
+                            keyboardType="numeric"
+                        />
+                    </View>
+                </View>
+                <View style={{flexDirection: 'row', justifyContent: 'space-around'}}>
+                    <View style={{flex: 1, alignItems: 'center'}}>
+                        <Text style={styles.text}>Length (cm)</Text>
+                        <TextInput 
+                            value={length}
+                            onChangeText={setLength}
+                            style={styles.textInput}
+                            editable={checked}
+                            keyboardType="numeric"
+                        />
+                    </View>
+                    <View style={{flex: 1, alignItems: "center"}}>
+                        <Text style={styles.text}>Sex</Text>
+                        <Dropdown disabled={!checked} />
+                    </View>
+                </View>
+                <View>
+                    <Text style={[styles.text, {marginBottom: 8, marginLeft: 20}]}>Goals</Text>
+                    <TextInput 
+                        value={goal}
+                        onChangeText={setGoal}
+                        editable={checked}
+                        style={[styles.textInput, {alignSelf: 'center', marginTop: 0, width: 370, height: 80}]}
+                    />
+                </View>
+                
                 <Pressable
                     onPress={async () => {
-                        await savePersonalization(text)
-                        await AsyncStorage.setItem(getPreference('personalization'), JSON.stringify(text))
+                        await savePersonalization(personalization)
+                        await AsyncStorage.setItem(getPreference('personalization'), JSON.stringify(personalization))
                         await AsyncStorage.setItem(getPreference("switch_state"), JSON.stringify(checked));
                         showToast();
                     }}
@@ -110,20 +164,19 @@ const styles = StyleSheet.create({
     text: {
         fontSize: 16,
         color: '#333',
-        marginLeft: 20,
         marginTop: 18
     },
     textInput: {
         borderColor: '#D9D9D9', 
         borderWidth: 1, 
         borderStyle: 'solid',
-        width: 370,
-        height: 80,
+        width: 70,
+        height: 40,
         borderRadius: 8,
-        alignSelf: 'center',
         textAlignVertical: 'top',
         paddingVertical: 10,
-        paddingHorizontal: 8
+        paddingHorizontal: 8,
+        marginTop: 5
     },
     pressable: {
         width: 80,

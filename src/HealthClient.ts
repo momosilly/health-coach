@@ -77,25 +77,13 @@ export async function openHealthConnect(): Promise<void> {
 
 // ─── fetchHealthInsight ──────────
 
-// ─── getPersonalization ──────────
-
-/**
- * Get the current personalization message from the backend.
- */
-export async function getPersonalization(): Promise<string> {
-  const res = await fetch(`${BACKEND_URL}/personalization`, { method: 'GET' });
-  if (!res.ok) throw new Error(`Backend error ${res.status}`);
-  const json = await res.json() as { personalization: string };
-  return json.personalization;
-}
-
 // ─── savePersonalization ──────────
 
 /**
  * Save the personalization message to the backend.
  * This message will be appended to every Gemini prompt going forward.
  *
- * @param message  The personalization message e.g. "I am a 25 year old male training for a marathon"
+ * @param message
  */
 export async function savePersonalization(message: string): Promise<void> {
   const res = await fetch(`${BACKEND_URL}/personalization`, {
