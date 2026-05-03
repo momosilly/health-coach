@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, View, TextInput, Pressable, ToastAndroid, BackHandler, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from 'expo-secure-store';
 import { getPreference } from "../../../src/storage/keys";
-import { Host, Row, Switch } from "@expo/ui/jetpack-compose";
+import { Host, Switch } from "@expo/ui/jetpack-compose";
 import { savePersonalization } from "../../../src/HealthClient";
 import { useRouter } from "expo-router";
 import { globalStyles } from "../../../src/styles";
@@ -17,6 +18,7 @@ export default function personalization() {
     const [weight, setWeight] = useState('');
     const [goal, setGoal] = useState('');
     const [length, setLength] = useState('');
+    const [sex, setSex] = useState('');
 
     const showToast = () => {
         ToastAndroid.show('Personalization settings has been saved', ToastAndroid.SHORT);
@@ -34,13 +36,19 @@ export default function personalization() {
         switchState();
 
         // Get text instruction value
-        const textValue = async () => {
-            const stored = await AsyncStorage.getItem(getPreference('personalization'));
-            if (!stored) return;
-            setPersonalization(JSON.parse(stored));
+        const load = async () => {
+            const stored = await SecureStore.getItemAsync('personalization');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                setPersonalization(parsed.personalization);
+                setAge(parsed.age);
+                setWeight(parsed.weight);
+                setLength(parsed.length);
+                setSex(parsed.sex);
+                setGoal(parsed.goal);
+            }
         };
-
-        textValue();
+        load();
 
         // Hardware back button navigates back to settings instead of home
         const onBackPress = () => {
@@ -51,12 +59,10 @@ export default function personalization() {
         const subscription = BackHandler.addEventListener(
             "hardwareBackPress",
             onBackPress
-        )
+        );
 
-        const removeSubscription = () => {return subscription.remove();}
-
-        removeSubscription();
-    }, [])
+        return () => subscription.remove();
+    }, []);
 
     return (
         <SafeAreaView>
@@ -128,7 +134,7 @@ export default function personalization() {
                     </View>
                     <View style={{flex: 1, alignItems: "center"}}>
                         <Text style={styles.text}>Sex</Text>
-                        <Dropdown disabled={!checked} />
+                        <Dropdown disabled={!checked} onSelectSex={setSex} />
                     </View>
                 </View>
                 <View>
@@ -143,10 +149,13 @@ export default function personalization() {
                 
                 <Pressable
                     onPress={async () => {
-                        await savePersonalization(personalization)
-                        await AsyncStorage.setItem(getPreference('personalization'), JSON.stringify(personalization))
-                        await AsyncStorage.setItem(getPreference("switch_state"), JSON.stringify(checked));
-                        showToast();
+                    const data = { personalization, age, weight, length, sex, goal };
+                    const personalizationString = `User's preference: ${personalization}, age: ${age}, weight (kg): ${weight}, length: ${length}, sex: ${sex}, goals: ${goal}`;
+
+                    await savePersonalization(personalizationString);
+                    await SecureStore.setItemAsync('personalization', JSON.stringify(data));
+                    await AsyncStorage.setItem(getPreference('switch_state'), JSON.stringify(checked));
+                    showToast();
                     }}
                     style={({pressed}) => [
                         styles.pressable,

@@ -1,14 +1,20 @@
 import { Host, DropdownMenu, DropdownMenuItem, OutlinedButton, Text } from "@expo/ui/jetpack-compose";
-import { disabled } from "@expo/ui/swift-ui/modifiers";
 import { useState } from "react";
 
 type DropdownProps = {
-    disabled?: boolean
+    disabled?: boolean;
+    onSelectSex?: (sex: string) => void;
 }
 
-export default function Dropdown({ disabled = false }: DropdownProps) {
+export default function Dropdown({ disabled = false, onSelectSex }: DropdownProps) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [sex, setSex] = useState('')
+
+    const selectSex = (value: string) => {
+        setIsExpanded(false);
+        setSex(value);
+        onSelectSex?.(value);
+    }
 
     return (
         <Host matchContents>
@@ -25,24 +31,18 @@ export default function Dropdown({ disabled = false }: DropdownProps) {
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Items>
                     <DropdownMenuItem
-                        onClick={() => {
-                            setIsExpanded(false);
-                            setSex('Man')
-                        }}
+                        onClick={() => selectSex('Male')}
                     >
                         <DropdownMenuItem.Text>
-                            <Text>Man</Text>
+                            <Text>Male</Text>
                         </DropdownMenuItem.Text>
                     </DropdownMenuItem>
 
                     <DropdownMenuItem
-                        onClick={() => {
-                            setIsExpanded(false)
-                            setSex('Woman')
-                        }}
+                        onClick={() => selectSex('Female')}
                     >
                         <DropdownMenuItem.Text>
-                            <Text>Woman</Text>
+                            <Text>Female</Text>
                         </DropdownMenuItem.Text>
                     </DropdownMenuItem>
                 </DropdownMenu.Items>
