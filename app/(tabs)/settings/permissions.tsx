@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { usePermissions } from "../../../src/PermissionsControl";
 import { useRouter } from "expo-router";
 import { globalStyles } from "../../../src/styles";
+import { ToastAndroid } from "react-native";
 
 export default function permissions() {
     const router = useRouter();
@@ -24,6 +25,14 @@ export default function permissions() {
         return () => subscription.remove();
     }, [])
 
+    const handleOpenHealthConnect = async () => {
+        if (permissions?.all_granted) {
+            ToastAndroid.show('All permissions are already granted', ToastAndroid.SHORT);
+            return;
+        }
+        openHealthConnect();
+        };
+
     return (
         <SafeAreaView>
             <Text style={globalStyles.title}>Permissions</Text>
@@ -31,13 +40,13 @@ export default function permissions() {
                 <Text style={styles.statusText}>{permissions?.status_text}</Text>
             </View>
             <Pressable
-                onPress={openHealthConnect}
+                onPress={handleOpenHealthConnect}
                 style={({pressed}) => [
                     styles.pressable,
                     pressed && globalStyles.pressablePressed
                 ]}
             >
-                <Text style={{ fontSize: 16, color: '#fff' }}>Open Health Connect</Text>
+                <Text style={{ fontSize: 16, color: '#fff' }}>Grant permissions</Text>
             </Pressable>
         </SafeAreaView>
     )
