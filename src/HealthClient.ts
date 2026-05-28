@@ -1,5 +1,5 @@
 const BASE_URL = 'http://localhost:8765';
-const BACKEND_URL = 'https://health-coach-q3av.onrender.com';
+const BACKEND_URL = ' http://10.45.8.134:5000';
 
 // ─── Types ──────────
 
@@ -76,23 +76,6 @@ export async function openHealthConnect(): Promise<void> {
 }
 
 // ─── fetchHealthInsight ──────────
-
-// ─── savePersonalization ──────────
-
-/**
- * Save the personalization message to the backend.
- * This message will be appended to every Gemini prompt going forward.
- *
- * @param message
- */
-export async function savePersonalization(message: string): Promise<void> {
-  const res = await fetch(`${BACKEND_URL}/personalization`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ personalization: message }),
-  });
-  if (!res.ok) throw new Error(`Backend error ${res.status}`);
-}
 
 /**
  * Collect the last 24 h of health data from Health Connect and return

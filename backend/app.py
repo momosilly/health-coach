@@ -17,31 +17,6 @@ client = genai.Client()
 # On Render.com this persists as long as the server is running
 personalization_message = "Provide a helpful, motivating, and data-backed answer."
 
-# ── GET /personalization ───────────────
-@app.route('/personalization', methods=['GET'])
-def get_personalization():
-    return jsonify({
-        'status': 'success',
-        'personalization': personalization_message
-    }), 200
-
-# ── POST /personalization ──────────────
-@app.route('/personalization', methods=['POST'])
-def set_personalization():
-    global personalization_message
-    try:
-        data = request.get_json()
-        message = data.get('personalization', '').strip()
-        if not message:
-            message = personalization_message
-        personalization_message = message
-        return jsonify({
-            'status': 'success',
-            'personalization': personalization_message
-        }), 200
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 400
-
 # ── POST /healthdata ───────────────────
 @app.route('/healthdata', methods=['POST']) 
 def receive_health_data(): 
@@ -102,13 +77,12 @@ def receive_health_data():
 
         def GeminiResponse(): 
             response = client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-2.5-flash-lite",
                 config=types.GenerateContentConfig(
                     system_instruction="You are a health coach AI"
                 ),
                 contents=f"The following data represents the user's last 24 hours of health metrics.\n\n{json.dumps(response_data, indent=2)}\n\nUser's question: {user_question}\n\n{personalization_message}"
             )
-            print(response.text)
             response_data['gemini_insight'] = response.text.strip()
 
         GeminiResponse()

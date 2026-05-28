@@ -4,11 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { waitForServer, fetchHealthInsight } from '../../src/HealthClient';
 import { getPreference } from '../../src/storage/keys';
-import { savePersonalization } from '../../src/HealthClient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { GradientText } from '../(components)/GradientText';
 import Markdown from 'react-native-markdown-display';
 import { globalStyles } from '../../src/styles';
+import { store } from 'expo-router/build/global-state/router-store';
+import { parse } from 'expo-linking';
 
 export default function App() {
   const [serverReady, setServerReady] = useState(false);
@@ -26,22 +27,6 @@ export default function App() {
       setServerReady(ready);
       if (!ready) setError('Could not connect to health server.');
     });
-
-    // Get personalization message from asyncstorage
-    const syncServer = async () => {
-      try {
-        const key = getPreference('personalization');
-        if (!key) return;
-        const stored = await AsyncStorage.getItem(key);
-        if (!stored) return;
-        await savePersonalization(stored);
-      } catch (err) {
-        console.warn("Personalization sync failed", err);
-        setTimeout(syncServer, 5000);
-      }
-    };
-
-    syncServer();
 
     // Check whether the keyboard is on-screen. If yes, animate the input with the keyboard
     const show = Keyboard.addListener('keyboardDidShow', (e: KeyboardEvent) => {
@@ -64,13 +49,22 @@ export default function App() {
     return () => { show.remove(); hide.remove(); };
   }, []);
 
+  // Get personalization from secure storage
+  const getPersonalization = async (): Promise<string> => {
+    const stored = await SecureStore.getItemAsync('personalization');
+    if (!stored) return '';
+    const parsed = JSON.parse(stored);
+    return `User profile: age ${parsed.age}, weight (kg): ${parsed.weight}, length: ${parsed.length}, sex: ${parsed.sex}, goals: ${parsed.goal}, preferences: ${parsed.personalization}`;
+  };
+
   // Handle Gemini insight
   const handleSend = async () => {
     setLoading(true);
     setInsight('');
     setError('');
     try {
-      const result = await fetchHealthInsight(userNote);
+      const personalization = await getPersonalization();
+      const result = await fetchHealthInsight(`${userNote}\n\n${personalization}`);
       setInsight(result.insight);
       setUserNote('');
     } catch (e: any) {

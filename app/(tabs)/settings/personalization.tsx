@@ -5,7 +5,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from 'expo-secure-store';
 import { getPreference } from "../../../src/storage/keys";
 import { Host, Switch } from "@expo/ui/jetpack-compose";
-import { savePersonalization } from "../../../src/HealthClient";
 import { useRouter } from "expo-router";
 import { globalStyles } from "../../../src/styles";
 import Dropdown from "../../(components)/DropdownMenu";
@@ -152,7 +151,6 @@ export default function personalization() {
                     const data = { personalization, age, weight, length, sex, goal };
                     const personalizationString = `User's preference: ${personalization}, age: ${age}, weight (kg): ${weight}, length: ${length}, sex: ${sex}, goals: ${goal}`;
 
-                    await savePersonalization(personalizationString);
                     await SecureStore.setItemAsync('personalization', JSON.stringify(data));
                     await AsyncStorage.setItem(getPreference('switch_state'), JSON.stringify(checked));
                     showToast();
