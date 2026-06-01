@@ -1,5 +1,4 @@
 const BASE_URL = 'http://localhost:8765';
-const BACKEND_URL = ' http://10.45.8.134:5000';
 
 // ─── Types ──────────
 

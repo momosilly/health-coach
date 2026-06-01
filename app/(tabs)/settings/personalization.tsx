@@ -149,7 +149,6 @@ export default function personalization() {
                 <Pressable
                     onPress={async () => {
                     const data = { personalization, age, weight, length, sex, goal };
-                    const personalizationString = `User's preference: ${personalization}, age: ${age}, weight (kg): ${weight}, length: ${length}, sex: ${sex}, goals: ${goal}`;
 
                     await SecureStore.setItemAsync('personalization', JSON.stringify(data));
                     await AsyncStorage.setItem(getPreference('switch_state'), JSON.stringify(checked));

@@ -8,8 +8,7 @@ import * as SecureStore from 'expo-secure-store';
 import { GradientText } from '../(components)/GradientText';
 import Markdown from 'react-native-markdown-display';
 import { globalStyles } from '../../src/styles';
-import { store } from 'expo-router/build/global-state/router-store';
-import { parse } from 'expo-linking';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function App() {
   const [serverReady, setServerReady] = useState(false);
@@ -50,12 +49,17 @@ export default function App() {
   }, []);
 
   // Get personalization from secure storage
-  const getPersonalization = async (): Promise<string> => {
-    const stored = await SecureStore.getItemAsync('personalization');
-    if (!stored) return '';
-    const parsed = JSON.parse(stored);
-    return `User profile: age ${parsed.age}, weight (kg): ${parsed.weight}, length: ${parsed.length}, sex: ${parsed.sex}, goals: ${parsed.goal}, preferences: ${parsed.personalization}`;
-  };
+const getPersonalization = async (): Promise<string> => {
+  const switchState = await AsyncStorage.getItem(getPreference('switch_state'));
+  const isEnabled = switchState ? JSON.parse(switchState) : false;
+  
+  if (!isEnabled) return "Provide a helpful, motivating, and data-backed answer.";
+  
+  const stored = await SecureStore.getItemAsync('personalization');
+  if (!stored) return "Provide a helpful, motivating, and data-backed answer.";
+  const parsed = JSON.parse(stored);
+  return `User profile: age ${parsed.age}, weight (kg): ${parsed.weight}, length: ${parsed.length}, sex: ${parsed.sex}, goals: ${parsed.goal}, preferences: ${parsed.personalization}`;
+};
 
   // Handle Gemini insight
   const handleSend = async () => {
