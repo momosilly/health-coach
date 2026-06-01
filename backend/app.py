@@ -3,19 +3,14 @@ from datetime import datetime
 import json 
 from dotenv import load_dotenv 
 import os 
-from google import genai 
-from google.genai import types
+from mistralai.client import Mistral
 
 app = Flask(__name__) 
 DB_NAME = "health_data"
 
 load_dotenv() 
-API_KEY = os.getenv("GEMINI_API_KEY")
-client = genai.Client()
-
-# In-memory personalization store
-# On Render.com this persists as long as the server is running
-personalization_message = "Provide a helpful, motivating, and data-backed answer."
+API_KEY = os.getenv("MISTRAL_API_KEY")
+client = Mistral(api_key=API_KEY)
 
 # ── POST /healthdata ───────────────────
 @app.route('/healthdata', methods=['POST']) 
@@ -75,17 +70,17 @@ def receive_health_data():
 
             response_data['sleep_stages'] = ", ".join(sleep_stages_formatted)
 
-        def GeminiResponse(): 
-            response = client.models.generate_content(
-                model="gemini-2.5-flash-lite",
-                config=types.GenerateContentConfig(
-                    system_instruction="You are a health coach AI"
-                ),
-                contents=f"The following data represents the user's last 24 hours of health metrics.\n\n{json.dumps(response_data, indent=2)}\n\nUser's question: {user_question}\n\n{personalization_message}"
+        def MistralResponse(): 
+            response = client.chat.complete(
+                model="ministral-14b-2512",
+                messages=[
+                    {"role": "user", "content": f"The following data represents the user's last 24 hours of health metrics.\n\n{json.dumps(response_data, indent=2)}\n\nUser's question: {user_question}"}
+                ]
             )
-            response_data['gemini_insight'] = response.text.strip()
+            response_data['gemini_insight'] = response.choices[0].message.content
+            return response
 
-        GeminiResponse()
+        MistralResponse()
         return jsonify({
             'status': 'success',
             'data_received': response_data
