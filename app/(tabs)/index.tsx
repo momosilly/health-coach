@@ -58,7 +58,7 @@ const getPersonalization = async (): Promise<string> => {
   const stored = await SecureStore.getItemAsync('personalization');
   if (!stored) return "Provide a helpful, motivating, and data-backed answer.";
   const parsed = JSON.parse(stored);
-  return `User profile: age ${parsed.age}, weight (kg): ${parsed.weight}, length: ${parsed.length}, sex: ${parsed.sex}, goals: ${parsed.goal}, preferences: ${parsed.personalization}`;
+  return `User profile: age ${parsed.age}, weight (kg): ${parsed.weight}, length: ${parsed.length}, sex: ${parsed.sex}, goals: ${parsed.goal} {\n\n} User's preferences: ${parsed.personalization}`;
 };
 
   // Handle Gemini insight
