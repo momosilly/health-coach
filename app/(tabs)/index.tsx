@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TextInput, Pressable, View, Image, ScrollView, Keyboard, KeyboardEvent, Animated } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TextInput, Pressable, View, Image, ScrollView, Keyboard, KeyboardEvent, Animated, Button } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { waitForServer, fetchHealthInsight } from '../../src/HealthClient';
@@ -9,6 +9,7 @@ import { GradientText } from '../(components)/GradientText';
 import Markdown from 'react-native-markdown-display';
 import { globalStyles } from '../../src/styles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { login } from '../../src/auth/appauth'
 
 export default function App() {
   const [serverReady, setServerReady] = useState(false);
@@ -19,6 +20,20 @@ export default function App() {
   const router = useRouter();
   const keyboardHeight = useRef(new Animated.Value(0)).current;
   const [inputHeight, setInputHeight] = useState(0);
+  const [authResult, setAuthResult] = React.useState<any>(null);
+  const [msError, setMsError] = React.useState<string | null>(null);
+
+  async function handleLogin() {
+    try {
+      setMsError(null);
+      const result = await login();
+      setAuthResult(result);
+      console.log("Auth success:", result);
+    } catch (e: any) {
+      console.error("Auth error:", e);
+      setMsError(e.message || "Authentication failed");
+    }
+  }
 
   // Wait for the Kotlin server on mount
   useEffect(() => {
@@ -89,6 +104,24 @@ const getPersonalization = async (): Promise<string> => {
 
   return (
     <View style={{flex: 1}}>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <Button title="Sign in with Microsoft" onPress={handleLogin} />
+
+        {authResult && (
+          <View style={{ marginTop: 20 }}>
+            <Text>Access Token:</Text>
+            <Text numberOfLines={1} ellipsizeMode="middle">
+              {authResult.accessToken}
+            </Text>
+          </View>
+        )}
+
+        {msError && (
+          <Text style={{ marginTop: 20, color: "red" }}>
+            {msError}
+          </Text>
+        )}
+      </View>
       <SafeAreaView style={styles.container}>
         <Pressable
           onPress={() => router.push('settings')}
