@@ -1,13 +1,11 @@
-import React, { useState } from "react";
-import { View, Text, Pressable, StyleSheet, Dimensions } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { View, Text, Pressable, StyleSheet, Dimensions, AppState } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { openHealthConnect } from "../src/HealthClient";
+import { getPermissions, openHealthConnect } from "../src/HealthClient";
 import { getPreference } from "../src/storage/keys";
 import { globalStyles } from "../src/styles";
-
-const { width } = Dimensions.get('window');
 
 const STEPS = [
     {
@@ -22,79 +20,113 @@ const STEPS = [
     },
     {
         title: 'You\'re almost there',
-        body: 'Nice work! Now that your health app is set up, the last step is to grant Health Coach access to Health Connect.\n\nTap the button below and grant all permissions — this is what lets us read your health data and give you meaningful coaching.',
+        body: 'Nice work! Now that your health app is set up, the last step is to grant Health Coach access to Health Connect.\n\nTap the button below and grant the permissions — this is what lets us read your health data and give you meaningful coaching.',
         cta: 'Connect to Health Connect',
         isFinal: true,
     },
 ];
-
-export default function Oboarding() {
+ 
+export default function Onboarding() {
     const router = useRouter();
     const [step, setStep] = useState(0);
     const [loading, setLoading] = useState(false);
-    const current = STEPS[step]
-
+    const [permError, setPermError] = useState('');
+    const appState = useRef(AppState.currentState);
+    const waitingForPermissions = useRef(false);
+    const current = STEPS[step];
+ 
+    // When user comes back from Health Connect, check if at least one permission was granted
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', async nextState => {
+            if (
+                appState.current.match(/inactive|background/) &&
+                nextState === 'active' &&
+                waitingForPermissions.current
+            ) {
+                waitingForPermissions.current = false;
+                try {
+                    const perms = await getPermissions();
+                    if (perms.granted > 0) {
+                        await AsyncStorage.setItem(getPreference('onboarding_done'), JSON.stringify(true));
+                        router.replace('/(tabs)');
+                    } else {
+                        setPermError('No permissions were granted. Please grant at least one to continue.');
+                        setLoading(false);
+                    }
+                } catch (e) {
+                    setPermError('Could not verify permissions. Please try again.');
+                    setLoading(false);
+                }
+            }
+            appState.current = nextState;
+        });
+ 
+        return () => subscription.remove();
+    }, []);
+ 
     const handleCta = async () => {
         if (!current.isFinal) {
             setStep(s => s + 1);
             return;
         }
-
+ 
+        // Final step — open Health Connect, then wait for user to come back via AppState
         try {
             setLoading(true);
+            setPermError('');
+            waitingForPermissions.current = true;
             await openHealthConnect();
-            await AsyncStorage.setItem(getPreference('onboarding_done'), JSON.stringify(true))
-            router.replace('/(tabs)');
-        } catch(e) {
-            // If opening Health Connect fails, still mark done and proceed
-            await AsyncStorage.setItem(getPreference('onboarding_done'), JSON.stringify(true));
-            router.replace('/(tabs)');
-        } finally {
+        } catch (e) {
+            waitingForPermissions.current = false;
+            setPermError('Could not open Health Connect. Please try again.');
             setLoading(false);
         }
     };
-
+ 
     return (
         <SafeAreaView style={styles.container}>
-            {/*Step indicators*/}
+            {/* Step indicators */}
             <View style={styles.indicators}>
                 {STEPS.map((_, i) => (
-                    <View 
+                    <View
                         key={i}
                         style={[
                             styles.indicator,
                             i === step && styles.indicatorActive,
-                            i < step && styles.indicatorDone
+                            i < step && styles.indicatorDone,
                         ]}
                     />
                 ))}
             </View>
-
-            {/*Content*/}
+ 
+            {/* Content */}
             <View style={styles.content}>
                 <Text style={styles.title}>{current.title}</Text>
                 <Text style={styles.body}>{current.body}</Text>
             </View>
-
-            {/*CTA*/}
+ 
+            {/* CTA */}
             <View style={styles.bottom}>
+                {permError !== '' && (
+                    <Text style={styles.error}>{permError}</Text>
+                )}
                 <Pressable
                     onPress={handleCta}
                     disabled={loading}
-                    style={({pressed}) => [
+                    style={({ pressed }) => [
                         styles.button,
                         current.isFinal && styles.buttonFinal,
                         loading && globalStyles.pressableDisabled,
-                        pressed && globalStyles.pressablePressed
+                        pressed && globalStyles.pressablePressed,
                     ]}
                 >
                     <Text style={styles.buttonText}>{current.cta}</Text>
                 </Pressable>
             </View>
         </SafeAreaView>
-    )
+    );
 }
-
+ 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -139,6 +171,11 @@ const styles = StyleSheet.create({
     bottom: {
         paddingHorizontal: 32,
         paddingBottom: 24,
+    },
+    error: {
+        color: 'red',
+        marginBottom: 12,
+        fontSize: 14,
     },
     button: {
         backgroundColor: '#2AB8A2',

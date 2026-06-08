@@ -74,7 +74,7 @@ def receive_health_data():
             response = client.chat.complete(
                 model="ministral-14b-2512",
                 messages=[
-                    {"role": "system", "content": "You are Health Coach AI inside an app called Health Coach. Your mission is to help users better interpret their health data and possibly take action on it. If any question is unrelated to health, you only answer with 'That is beyond my knowledge' without further explaining. Answer the user in the language the question is asked in."},
+                    {"role": "system", "content": "You are Health Coach AI inside an app called Health Coach. Your mission is to help users better interpret their health data and possibly take action on it. If any question is unrelated to health, you only answer with 'That is beyond my knowledge' without further explaining."},
                     {"role": "user", "content": f"The following data represents the user's last 24 hours of health metrics.\n\n{json.dumps(response_data, indent=2)}\n\nUser's question: {user_question}"}
                 ]
             )
