@@ -1,21 +1,54 @@
-from flask import Flask, request, jsonify 
-from datetime import datetime 
-import json 
-from dotenv import load_dotenv 
-import os 
-from mistralai.client import Mistral
+from flask import Flask, request, jsonify
+import json
+from dotenv import load_dotenv
+import os
+from google import genai
+from google.genai import types 
 
-app = Flask(__name__) 
-DB_NAME = "health_data"
+app = Flask(__name__)
 
-load_dotenv() 
-API_KEY = os.getenv("MISTRAL_API_KEY")
-client = Mistral(api_key=API_KEY)
+load_dotenv()
+
+PROJECT_ID = os.getenv("GCLOUD_PROJECT_ID")
+LOCATION = "europe-west4"
+
+# Initialize the Gen AI client for Vertex AI
+client = genai.Client(
+    vertexai=True,
+    project=PROJECT_ID,
+    location=LOCATION,
+)
+
+SYSTEM_PROMPT = (
+    "You are Health Coach AI inside an app called Health Coach. "
+    "Your mission is to help users better interpret their health data and possibly take action on it. "
+    "If any question is unrelated to health, you only answer with 'That is beyond my knowledge' without further explaining. "
+    "Answer the user in the language the question is asked in."
+)
+
+safety_settings = [
+    types.SafetySetting(
+        category="HARM_CATEGORY_DANGEROUS_CONTENT",
+        threshold="BLOCK_MEDIUM_AND_ABOVE",  # Blocks dangerous medical advice
+    ),
+    types.SafetySetting(
+        category="HARM_CATEGORY_HARASSMENT",
+        threshold="BLOCK_LOW_AND_ABOVE",  # Strict, not really relevant but good practice
+    ),
+    types.SafetySetting(
+        category="HARM_CATEGORY_HATE_SPEECH",
+        threshold="BLOCK_LOW_AND_ABOVE",  # Strict
+    ),
+    types.SafetySetting(
+        category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        threshold="BLOCK_MEDIUM_AND_ABOVE",  # Strict, not relevant but good practice
+    ),
+]
 
 # ── POST /healthdata ───────────────────
-@app.route('/healthdata', methods=['POST']) 
-def receive_health_data(): 
-    try: 
+@app.route('/healthdata', methods=['POST'])
+def receive_health_data():
+    try:
         data = request.get_json()
 
         # Extract data
@@ -49,7 +82,9 @@ def receive_health_data():
         if exercise_sessions:
             exercise_sessions_formatted = []
             for session in exercise_sessions:
-                exercise_sessions_formatted.append(f" {session.get('title', 'Unknown')}: {session.get('duration_minutes')} min ({session.get('type')}) ")
+                exercise_sessions_formatted.append(
+                    f" {session.get('title', 'Unknown')}: {session.get('duration_minutes')} min ({session.get('type')}) "
+                )
             response_data['exercise_sessions'] = ", ".join(exercise_sessions_formatted)
         if sleep_hours:
             response_data['sleep_hours'] = sleep_hours
@@ -60,7 +95,7 @@ def receive_health_data():
                 stage_type = stage.get('type', 'Unknown')
                 duration = stage.get('duration_minutes', 0)
                 stage_minutes[stage_type] = stage_minutes.get(stage_type, 0) + duration
-    
+
             sleep_stages_formatted = []
             stage_order = ['LIGHT', 'DEEP', 'REM', 'AWAKE', 'SLEEPING', 'OUT_OF_BED', 'UNKNOWN']
             for stage_name in stage_order:
@@ -70,18 +105,26 @@ def receive_health_data():
 
             response_data['sleep_stages'] = ", ".join(sleep_stages_formatted)
 
-        def MistralResponse(): 
-            response = client.chat.complete(
-                model="ministral-14b-2512",
-                messages=[
-                    {"role": "system", "content": "You are Health Coach AI inside an app called Health Coach. Your mission is to help users better interpret their health data and possibly take action on it. If any question is unrelated to health, you only answer with 'That is beyond my knowledge' without further explaining."},
-                    {"role": "user", "content": f"The following data represents the user's last 24 hours of health metrics.\n\n{json.dumps(response_data, indent=2)}\n\nUser's question: {user_question}"}
-                ]
-            )
-            response_data['gemini_insight'] = response.choices[0].message.content
-            return response
+        # ── Vertex AI / Gemini call ────────────────────────────────────────
+        prompt = (
+            f"The following data represents the user's last 24 hours of health metrics.\n\n"
+            f"{json.dumps(response_data, indent=2)}\n\n"
+            f"User's question: {user_question}"
+        )
 
-        MistralResponse()
+        vertex_response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_PROMPT,
+                temperature=0.7,
+                max_output_tokens=1024,
+                safety_settings=safety_settings
+            ),
+        )
+
+        response_data['gemini_insight'] = vertex_response.text
+
         return jsonify({
             'status': 'success',
             'data_received': response_data
@@ -96,6 +139,6 @@ def receive_health_data():
             'message': str(e)
         }), 400
 
-if __name__ == "__main__": 
-    port = int(os.environ.get("PORT", 5000)) 
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
