@@ -1,11 +1,8 @@
+import { fetch } from 'expo/fetch';
+
 const BASE_URL = 'http://localhost:8765';
 
 // ─── Types ──────────
-
-export interface HealthInsightResult {
-  insight: string;
-  raw: Record<string, unknown>;
-}
 
 export interface PermissionsResult {
   granted: number;
@@ -54,7 +51,6 @@ export async function waitForServer(
 
 /**
  * Get the current Health Connect permission status.
- * Use this to display permission count and status text in your RN screen.
  */
 export async function getPermissions(): Promise<PermissionsResult> {
   const res = await fetch(`${BASE_URL}/permissions`, { method: 'GET' });
@@ -66,32 +62,35 @@ export async function getPermissions(): Promise<PermissionsResult> {
 
 /**
  * Tell the Kotlin server to open Health Connect so the user can manage permissions.
- * On Android 14+ opens the built-in Health Connect settings.
- * On Android 13 and below opens the Health Connect app (or Play Store if not installed).
  */
 export async function openHealthConnect(): Promise<void> {
   const res = await fetch(`${BASE_URL}/permissions/open`, { method: 'POST' });
   if (!res.ok) throw new Error(`HealthServer error ${res.status}`);
 }
 
-// ─── fetchHealthInsight ──────────
+// ─── streamHealthInsight ──────────
 
 /**
- * Collect the last 24 h of health data from Health Connect and return
- * Gemini's coaching insight.
+ * Stream a Gemini coaching insight from the Flask/FastAPI backend.
+ * Calls onChunk with each piece of text as it arrives.
  *
- * @param userNote  Optional free-text note from the user (e.g. "I feel tired today").
+ * @param userNote     The user's question.
+ * @param onChunk      Called with each text chunk as it streams in.
  */
-export async function fetchHealthInsight(
+export async function streamHealthInsight(
   userNote: string,
-): Promise<HealthInsightResult> {
+  onChunk: (chunk: string) => void,
+): Promise<void> {
   if (!userNote) {
     throw new Error('Please enter a note before getting insight.');
   }
 
   const res = await fetch(`${BASE_URL}/healthdata`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'text/event-stream',
+    },
     body: JSON.stringify({ user_note: userNote }),
   });
 
@@ -100,12 +99,15 @@ export async function fetchHealthInsight(
     throw new Error(`HealthServer error ${res.status}: ${text}`);
   }
 
-  const json = (await res.json()) as Record<string, unknown>;
+  // Read the response body as a stream
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
 
-  // Unwrap the insight the same way the original MainActivity did:
-  //   json.data_received.gemini_insight
-  const dataReceived = json.data_received as Record<string, unknown> | undefined;
-  const insight = (dataReceived?.gemini_insight as string) ?? '';
-
-  return { insight, raw: json };
+  while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value, { stream: true });
+      console.log(`[stream] received ${chunk.length} chars at ${Date.now()}`);
+      if (chunk) onChunk(chunk);
+  }
 }

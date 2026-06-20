@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TextInput, Pressable, View, Image, ScrollView, Keyboard, KeyboardEvent, Animated, Button } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { waitForServer, fetchHealthInsight } from '../../src/HealthClient';
+import { waitForServer, streamHealthInsight } from '../../src/HealthClient';
 import { getPreference } from '../../src/storage/keys';
 import * as SecureStore from 'expo-secure-store';
 import { GradientText } from '../(components)/GradientText';
@@ -61,16 +61,20 @@ const getPersonalization = async (): Promise<string> => {
   return `User profile: age ${parsed.age}, weight (kg): ${parsed.weight}, length: ${parsed.length}, sex: ${parsed.sex}, goals: ${parsed.goal} {\n\n} User's preferences: ${parsed.personalization}`;
 };
 
-  // Handle Gemini insight
+  // Handle Gemini insight — streams chunks into insight state as they arrive
   const handleSend = async () => {
     setLoading(true);
     setInsight('');
     setError('');
+    const question = userNote;
+    setUserNote('');
+ 
     try {
       const personalization = await getPersonalization();
-      const result = await fetchHealthInsight(`${userNote}\n\n${personalization}`);
-      setInsight(result.insight);
-      setUserNote('');
+      await streamHealthInsight(
+        `${question}\n\n${personalization}`,
+        (chunk) => setInsight(prev => prev + chunk),  // append each chunk as it arrives
+      );
     } catch (e: any) {
       setError(e.message);
     } finally {

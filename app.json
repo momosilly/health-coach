@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "HealthCoach-v3.0",
-    "slug": "HealthCoach-v3.0",
+    "name": "HealthCoach",
+    "slug": "healthcoach",
     "version": "1.0.0",
     "plugins": [
       "expo-router",
@@ -31,6 +31,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b17dd942-2f64-4762-b12b-8903cffd2d2a"
+      }
     }
   }
 }

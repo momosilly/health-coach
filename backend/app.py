@@ -1,11 +1,11 @@
-from flask import Flask, request, jsonify
 import json
-from dotenv import load_dotenv
 import os
+import time
+from dotenv import load_dotenv
+from fastapi import FastAPI, Request
+from fastapi.responses import StreamingResponse
 from google import genai
-from google.genai import types 
-
-app = Flask(__name__)
+from google.genai import types
 
 load_dotenv()
 
@@ -18,6 +18,8 @@ client = genai.Client(
     project=PROJECT_ID,
     location=LOCATION,
 )
+
+app = FastAPI()
 
 SYSTEM_PROMPT = (
     "You are Health Coach AI inside an app called Health Coach. "
@@ -45,100 +47,112 @@ safety_settings = [
     ),
 ]
 
-# ── POST /healthdata ───────────────────
-@app.route('/healthdata', methods=['POST'])
-def receive_health_data():
+
+def build_prompt(data: dict) -> tuple[dict, str]:
+    """Extract and format health data, return (response_data, prompt)."""
+    user_question = data.get('user_note', '')
+    steps = data.get('steps_last_24h', 0)
+    hr_min = data.get('heart_rate_min', 0)
+    hr_max = data.get('heart_rate_max', 0)
+    total_calories = data.get('total_calories_burned', 0.0)
+    resting_hr = data.get('resting_heart_rate', 0)
+    sleep_hours = data.get('sleep_hours', 0.0)
+    sleep_sessions = data.get('sleep_sessions', [])
+    sleep_stages = data.get('sleep_stages', [])
+    exercise_duration = data.get('exercise_duration_minutes', 0)
+    exercise_sessions = data.get('exercise_sessions', [])
+
+    response_data = {}
+    stage_minutes = {}
+
+    if user_question:
+        response_data['user_question'] = user_question
+    if steps:
+        response_data['steps'] = steps
+    if hr_min and hr_max:
+        response_data['heart_rate'] = f"{hr_min}-{hr_max}"
+    if resting_hr:
+        response_data['resting_hr'] = resting_hr
+    if total_calories:
+        response_data['calories'] = f"{total_calories} cal"
+    if exercise_duration:
+        response_data['exercise_duration'] = f"{exercise_duration} min"
+    if exercise_sessions:
+        exercise_sessions_formatted = []
+        for session in exercise_sessions:
+            exercise_sessions_formatted.append(
+                f" {session.get('title', 'Unknown')}: {session.get('duration_minutes')} min ({session.get('type')}) "
+            )
+        response_data['exercise_sessions'] = ", ".join(exercise_sessions_formatted)
+    if sleep_hours:
+        response_data['sleep_hours'] = sleep_hours
+    if sleep_sessions:
+        response_data['sleep_sessions'] = len(sleep_sessions)
+    if sleep_stages:
+        for stage in sleep_stages:
+            stage_type = stage.get('type', 'Unknown')
+            duration = stage.get('duration_minutes', 0)
+            stage_minutes[stage_type] = stage_minutes.get(stage_type, 0) + duration
+
+        sleep_stages_formatted = []
+        stage_order = ['LIGHT', 'DEEP', 'REM', 'AWAKE', 'SLEEPING', 'OUT_OF_BED', 'UNKNOWN']
+        for stage_name in stage_order:
+            if stage_name in stage_minutes:
+                minutes = stage_minutes[stage_name]
+                sleep_stages_formatted.append(f"{stage_name}: {minutes} min")
+
+        response_data['sleep_stages'] = ", ".join(sleep_stages_formatted)
+
+    prompt = (
+        f"The following data represents the user's last 24 hours of health metrics.\n\n"
+        f"{json.dumps(response_data, indent=2)}\n\n"
+        f"User's question: {user_question}"
+    )
+
+    return response_data, prompt
+
+
+# ── POST /healthdata ───────────────────────────────────────────────────────────
+@app.post("/healthdata")
+async def receive_health_data(request: Request):
+    start_time = time.time()
+
     try:
-        data = request.get_json()
-
-        # Extract data
-        user_question = data.get('user_note', '')
-        steps = data.get('steps_last_24h', 0)
-        hr_min = data.get('heart_rate_min', 0)
-        hr_max = data.get('heart_rate_max', 0)
-        total_calories = data.get('total_calories_burned', 0.0)
-        resting_hr = data.get('resting_heart_rate', 0)
-        sleep_hours = data.get('sleep_hours', 0.0)
-        sleep_sessions = data.get('sleep_sessions', [])
-        sleep_stages = data.get('sleep_stages', [])
-        exercise_duration = data.get('exercise_duration_minutes', 0)
-        exercise_sessions = data.get('exercise_sessions', [])
-
-        response_data = {}
-        stage_minutes = {}
-
-        if user_question:
-            response_data['user_question'] = user_question
-        if steps:
-            response_data['steps'] = steps
-        if hr_min and hr_max:
-            response_data['heart_rate'] = f"{hr_min}-{hr_max}"
-        if resting_hr:
-            response_data['resting_hr'] = resting_hr
-        if total_calories:
-            response_data['calories'] = f"{total_calories} cal"
-        if exercise_duration:
-            response_data['exercise_duration'] = f"{exercise_duration} min"
-        if exercise_sessions:
-            exercise_sessions_formatted = []
-            for session in exercise_sessions:
-                exercise_sessions_formatted.append(
-                    f" {session.get('title', 'Unknown')}: {session.get('duration_minutes')} min ({session.get('type')}) "
-                )
-            response_data['exercise_sessions'] = ", ".join(exercise_sessions_formatted)
-        if sleep_hours:
-            response_data['sleep_hours'] = sleep_hours
-        if sleep_sessions:
-            response_data['sleep_sessions'] = len(sleep_sessions)
-        if sleep_stages:
-            for stage in sleep_stages:
-                stage_type = stage.get('type', 'Unknown')
-                duration = stage.get('duration_minutes', 0)
-                stage_minutes[stage_type] = stage_minutes.get(stage_type, 0) + duration
-
-            sleep_stages_formatted = []
-            stage_order = ['LIGHT', 'DEEP', 'REM', 'AWAKE', 'SLEEPING', 'OUT_OF_BED', 'UNKNOWN']
-            for stage_name in stage_order:
-                if stage_name in stage_minutes:
-                    minutes = stage_minutes[stage_name]
-                    sleep_stages_formatted.append(f"{stage_name}: {minutes} min")
-
-            response_data['sleep_stages'] = ", ".join(sleep_stages_formatted)
-
-        # ── Vertex AI / Gemini call ────────────────────────────────────────
-        prompt = (
-            f"The following data represents the user's last 24 hours of health metrics.\n\n"
-            f"{json.dumps(response_data, indent=2)}\n\n"
-            f"User's question: {user_question}"
-        )
-
-        vertex_response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_PROMPT,
-                temperature=0.7,
-                max_output_tokens=1024,
-                safety_settings=safety_settings
-            ),
-        )
-
-        response_data['gemini_insight'] = vertex_response.text
-
-        return jsonify({
-            'status': 'success',
-            'data_received': response_data
-        }), 200
-
+        data = await request.json()
     except Exception as e:
-        print(f"error: {str(e)}")
         import traceback
         traceback.print_exc()
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 400
+        return StreamingResponse(
+            iter([json.dumps({"error": f"Invalid JSON: {str(e)}"})]),
+            status_code=400,
+            media_type="application/json",
+        )
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    _, prompt = build_prompt(data)
+
+    async def generate():
+        try:
+            async for chunk in await client.aio.models.generate_content_stream(
+                model="gemini-2.5-flash",
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=SYSTEM_PROMPT,
+                    temperature=0.7,
+                    max_output_tokens=1500,
+                    thinking_config=types.ThinkingConfig(thinking_budget=512),
+                    safety_settings=safety_settings,
+                ),
+            ):
+                if chunk.text:
+                    print(f"[{time.time()}] yielding chunk: {chunk.text[:30]}")
+                    yield chunk.text
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            yield json.dumps({"error": str(e)})
+        finally:
+            duration = time.time() - start_time
+            print(f"Request took {duration:.4f} seconds")
+
+    return StreamingResponse(generate(), media_type="text/plain")
