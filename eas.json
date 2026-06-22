@@ -12,7 +12,7 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk",
-        "prebuild": false
+        "prebuildCommand": ""
       },
       "env": {
         "EXPO_USE_COMMUNITY_AUTOLINKING": "0"
@@ -21,7 +21,7 @@
     "production": {
       "autoIncrement": true,
       "android": {
-        "prebuild": false
+        "prebuildCommand": ""
       }
     }
   },
