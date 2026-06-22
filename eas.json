@@ -14,7 +14,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_USE_COMMUNITY_AUTOLINKING": "1"
+        "EXPO_USE_COMMUNITY_AUTOLINKING": "",
+        "EXPO_NO_PREBUILD": "1"
       }
     },
     "production": {
