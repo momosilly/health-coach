@@ -38,7 +38,6 @@ yarn-error.*
 
 # generated native folders
 /ios
-/android
 
 # eas modules and other artifacts
 config-error.txt
