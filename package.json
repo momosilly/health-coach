@@ -28,7 +28,8 @@
     "react-native-markdown-display": "^7.0.2",
     "react-native-safe-area-context": "^5.7.0",
     "react-native-screens": "~4.23.0",
-    "react-native-uuid": "^2.0.4"
+    "react-native-uuid": "^2.0.4",
+    "auth-module": "file:./modules/AuthModule"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",

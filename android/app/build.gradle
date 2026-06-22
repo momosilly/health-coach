@@ -93,7 +93,7 @@ android {
             appAuthRedirectScheme: "com.example.healthcoach"
         ]
         applicationId 'com.example.healthcoach'
-        minSdkVersion rootProject.ext.minSdkVersion
+        minSdkVersion 26
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0.0"
@@ -158,6 +158,26 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+
+    // Health Connect
+    implementation "androidx.health.connect:connect-client:1.1.0-alpha11"
+
+    // Networking & JSON
+    implementation "com.squareup.okhttp3:okhttp:4.12.0"
+    implementation "com.google.code.gson:gson:2.10.1"
+    
+    // Web Server (NanoHTTPD)
+    implementation "org.nanohttpd:nanohttpd:2.3.1"
+
+    // AppAuth (OAuth)
+    implementation "net.openid:appauth:0.11.1"
+
+    // Kotlin Coroutines & Lifecycle
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3"
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.7.0"
+    implementation "androidx.activity:activity-ktx:1.8.2"
+
+    implementation "androidx.security:security-crypto:1.1.0-alpha06"
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";

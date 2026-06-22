@@ -1,8 +1,7 @@
 import { requireNativeModule } from 'expo-modules-core';
 
-// Loads the native AuthModule (modules/AuthModule) via Expo's module registry
-// instead of the legacy NativeModules bridge — required since RN 0.83 removed
-// the legacy bridge entirely.
+// Loads the native AuthModule via Expo's module registry
+// instead of the legacy NativeModules bridge — required since RN 0.83
 const AuthModule = requireNativeModule('AuthModule');
 
 // Starts the Microsoft auth flow — resolves immediately, token arrives via retrievePendingToken()

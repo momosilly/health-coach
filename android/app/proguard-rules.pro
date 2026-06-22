@@ -13,6 +13,22 @@
 
 # Add any project specific keep options here:
 
+# Health Coach custom native modules — keep everything in our own package
+# so React Native's reflection-based bridge can still find AuthModule,
+# AuthPackage, HealthServer, etc. in release/minified builds.
+-keep class com.example.healthcoach.** { *; }
+
+# AppAuth (Microsoft Entra ID login flow)
+-keep class net.openid.appauth.** { *; }
+
+# Health Connect
+-keep class androidx.health.connect.client.** { *; }
+
+# Gson (used in NetworkClient for JSON serialization)
+-keep class com.google.gson.** { *; }
+-keepattributes Signature
+-keepattributes *Annotation*
+
 # @generated begin expo-build-properties - expo prebuild (DO NOT MODIFY)
 ...
 # @generated end expo-build-properties

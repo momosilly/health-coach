@@ -1,0 +1,16 @@
+{
+  "name": "auth-module",
+  "version": "0.1.0",
+  "description": "Native auth module for Health Coach",
+  "main": "index.ts",
+  "expo": {
+    "autolinking": {
+      "android": {
+        "sourceDir": "android",
+        "modules": [
+          "expo.modules.authmodule.AuthModule"
+        ]
+      }
+    }
+  }
+}
