@@ -43,5 +43,8 @@ yarn-error.*
 config-error.txt
 config-output.json
 eas-debug/
+android/app/build
+android/.gradle
+android/build
 
 .env
