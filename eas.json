@@ -11,14 +11,18 @@
     "preview": {
       "distribution": "internal",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "prebuild": false
       },
       "env": {
         "EXPO_USE_COMMUNITY_AUTOLINKING": "0"
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "android": {
+        "prebuild": false
+      }
     }
   },
   "submit": {
