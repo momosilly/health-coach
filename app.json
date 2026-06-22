@@ -5,7 +5,13 @@
     "version": "1.0.0",
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      "./plugins/withAuthRedirectScheme.js",
+      "./plugins/withHealthCoachManifest.js",
+      [
+        "expo-build-properties",
+        { "android": { "extraProguardRules": "..." } }
+      ]
     ],
     "orientation": "portrait",
     "icon": "./assets/icon.png",

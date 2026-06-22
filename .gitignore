@@ -40,4 +40,9 @@ yarn-error.*
 /ios
 /android
 
+# eas modules and other artifacts
+config-error.txt
+config-output.json
+eas-debug/
+
 .env
