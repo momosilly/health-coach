@@ -19,14 +19,12 @@ class HealthServer(
 
     companion object {
         private const val TAG = "HealthServer"
-        private const val BACKEND_URL = "http://10.45.8.88:5000/healthdata"
+        private const val BACKEND_URL = "http://192.168.178.173:5000/healthdata"
     }
 
     override fun serve(session: IHTTPSession): Response {
         val method = session.method
         val uri = session.uri
-
-        Log.d(TAG, "Incoming: $method $uri")
 
         // ── CORS pre-flight ──────────────────────────────────────────────────
         if (method == Method.OPTIONS) {
@@ -75,14 +73,11 @@ class HealthServer(
 
     // ── POST /permissions/open ────────────────────────────────────────────────
     private fun handleOpenHealthConnect(): Response {
-        Log.d(TAG, "handleOpenHealthConnect called")
         val activity = HealthServerManager.currentActivity
-        Log.d(TAG, "currentActivity: $activity")
         return if (activity != null) {
             activity.runOnUiThread {
                 try {
                     activity.permissionLauncher?.launch(HealthRepository(context).requiredPermissions())
-                    Log.d(TAG, "Health Connect opened successfully")
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed: ${e.message}", e)
                 }
@@ -155,8 +150,8 @@ class HealthServer(
                 return corsResponse(
                     newFixedLengthResponse(
                         Response.Status.INTERNAL_ERROR,
-                        "application/json",
-                        """{"error":"Backend returned ${backendHttpResponse.code}: $errorBody"}"""
+                        "text/plain",
+                        "$errorBody"
                     )
                 )
             }
@@ -171,7 +166,6 @@ class HealthServer(
                 override fun read(): Int = rawStream.read()
                 override fun read(b: ByteArray, off: Int, len: Int): Int {
                     val n = rawStream.read(b, off, len)
-                    Log.d(TAG, "[stream] read $n bytes at ${System.currentTimeMillis()}")
                     return n
                 }
                 override fun close() = rawStream.close()
@@ -192,8 +186,8 @@ class HealthServer(
             corsResponse(
                 newFixedLengthResponse(
                     Response.Status.INTERNAL_ERROR,
-                    "application/json",
-                    """{"error":"Backend request failed: ${e.message}"}"""
+                    "text/plain",
+                    "${e.message}"
                 )
             )
         }

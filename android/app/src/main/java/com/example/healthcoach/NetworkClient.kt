@@ -34,7 +34,7 @@ object NetworkClient {
             }
 
             override fun onResponse(call: Call, response: Response) {
-                callback(response.isSuccessful, response.body?.string())
+                callback(true, response.body?.string())
                 response.close()
             }
         })

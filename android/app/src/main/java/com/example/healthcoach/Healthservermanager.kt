@@ -41,6 +41,7 @@ object HealthServerManager {
 
     /** Stop the server (call from Application.onTerminate or a shutdown hook). */
     fun stop() {
+        Log.d(TAG, "stop() called from: ${Thread.currentThread().stackTrace.take(5).joinToString()}")
         server?.let {
             if (it.isAlive) {
                 it.stop()
