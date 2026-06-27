@@ -3,9 +3,12 @@ import os
 import time
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, PlainTextResponse
 from google import genai
 from google.genai import types
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 load_dotenv()
 
@@ -20,6 +23,12 @@ client = genai.Client(
 )
 
 app = FastAPI()
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request, exc):
+    return PlainTextResponse("Too many requests. Please wait a moment.", status_code=429)
 
 SYSTEM_PROMPT = (
     "You are Health Coach AI inside an app called Health Coach. "
@@ -47,10 +56,10 @@ safety_settings = [
     ),
 ]
 
-
 def build_prompt(data: dict) -> tuple[dict, str]:
     """Extract and format health data, return (response_data, prompt)."""
     user_question = data.get('user_note', '')
+    user_question = user_question[:500].strip()
     steps = data.get('steps_last_24h', 0)
     hr_min = data.get('heart_rate_min', 0)
     hr_max = data.get('heart_rate_max', 0)
@@ -111,11 +120,15 @@ def build_prompt(data: dict) -> tuple[dict, str]:
 
     return response_data, prompt
 
+#  ── Initial GET route ───────────────────────────────────────────────────────────
+@app.get("/")
+async def health_check():
+    return {"status": "ok"}
 
 # ── POST /healthdata ───────────────────────────────────────────────────────────
 @app.post("/healthdata")
+@limiter.limit("5/minute")
 async def receive_health_data(request: Request):
-    start_time = time.time()
 
     try:
         data = await request.json()
@@ -144,15 +157,11 @@ async def receive_health_data(request: Request):
                 ),
             ):
                 if chunk.text:
-                    print(f"[{time.time()}] yielding chunk: {chunk.text[:30]}")
                     yield chunk.text
 
         except Exception as e:
             import traceback
             traceback.print_exc()
-            yield json.dumps({"error": str(e)})
-        finally:
-            duration = time.time() - start_time
-            print(f"Request took {duration:.4f} seconds")
+            yield "Something went wrong. Please try again later."
 
     return StreamingResponse(generate(), media_type="text/plain")
