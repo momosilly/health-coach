@@ -68,12 +68,18 @@ const getPersonalization = async (): Promise<string> => {
     setError('');
     const question = userNote;
     setUserNote('');
+
+    if (userNote.length > 500) {
+    setError('Your message is too long. Please keep it under 500 characters.');
+    return;
+    }
  
     try {
       const personalization = await getPersonalization();
       await streamHealthInsight(
         `${question}\n\n${personalization}`,
         (chunk) => setInsight(prev => prev + chunk),  // append each chunk as it arrives
+        (error) => setError(error)
       );
     } catch (e: any) {
       setError(e.message);
