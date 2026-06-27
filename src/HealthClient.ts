@@ -1,6 +1,6 @@
 import { fetch } from 'expo/fetch';
 
-const BASE_URL = 'http://localhost:8765';
+const BASE_URL = 'http://127.0.0.1:8765';
 
 // ─── Types ──────────
 
@@ -54,9 +54,10 @@ export async function waitForServer(
  */
 export async function getPermissions(): Promise<PermissionsResult> {
   const res = await fetch(`${BASE_URL}/permissions`, { method: 'GET' });
-  if (!res.ok) throw new Error(`HealthServer error ${res.status}`);
+  if (!res.ok) throw new Error(`HealthServer error ${res.status}: ${await res.text()}`);
   return res.json() as Promise<PermissionsResult>;
 }
+
 
 // ─── openHealthConnect ──────────
 
@@ -65,7 +66,7 @@ export async function getPermissions(): Promise<PermissionsResult> {
  */
 export async function openHealthConnect(): Promise<void> {
   const res = await fetch(`${BASE_URL}/permissions/open`, { method: 'POST' });
-  if (!res.ok) throw new Error(`HealthServer error ${res.status}`);
+  if (!res.ok) throw new Error(`HealthServer error ${res.status}: ${await res.text()}`);
 }
 
 // ─── streamHealthInsight ──────────
@@ -80,6 +81,7 @@ export async function openHealthConnect(): Promise<void> {
 export async function streamHealthInsight(
   userNote: string,
   onChunk: (chunk: string) => void,
+  onError?: (error: string) => void,
 ): Promise<void> {
   if (!userNote) {
     throw new Error('Please enter a note before getting insight.');
@@ -95,8 +97,9 @@ export async function streamHealthInsight(
   });
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`HealthServer error ${res.status}: ${text}`);
+      const text = await res.text();
+      onError ? onError(text) : onChunk(text);
+      return;
   }
 
   // Read the response body as a stream
@@ -107,7 +110,6 @@ export async function streamHealthInsight(
       const { done, value } = await reader.read();
       if (done) break;
       const chunk = decoder.decode(value, { stream: true });
-      console.log(`[stream] received ${chunk.length} chars at ${Date.now()}`);
       if (chunk) onChunk(chunk);
   }
 }
