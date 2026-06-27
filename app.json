@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "HealthCoach",
-    "slug": "healthcoach",
+    "slug": "health-coach",
     "version": "1.0.0",
     "plugins": [
       "expo-router",
@@ -10,7 +10,12 @@
       "./plugins/withHealthCoachManifest.js",
       [
         "expo-build-properties",
-        { "android": { "extraProguardRules": "..." } }
+        {
+          "android": {
+            "extraProguardRules": "...",
+            "usesCleartextTraffic": true
+          }
+        }
       ]
     ],
     "orientation": "portrait",
@@ -41,7 +46,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "b17dd942-2f64-4762-b12b-8903cffd2d2a"
+        "projectId": "0e23a721-153e-480e-991d-a52986e7dd4a"
       }
     }
   }
