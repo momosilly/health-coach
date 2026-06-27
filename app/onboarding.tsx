@@ -44,6 +44,7 @@ export default function Onboarding() {
                 waitingForPermissions.current
             ) {
                 waitingForPermissions.current = false;
+                await new Promise(r => setTimeout(r, 2500));
                 try {
                     const perms = await getPermissions();
                     if (perms.granted > 0) {
