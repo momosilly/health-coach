@@ -1,7 +1,5 @@
 import json
 import os
-import time
-from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse, PlainTextResponse
 from google import genai
@@ -9,8 +7,7 @@ from google.genai import types
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-
-load_dotenv()
+import traceback
 
 PROJECT_ID = os.getenv("GCLOUD_PROJECT_ID")
 LOCATION = "europe-west4"
@@ -132,14 +129,9 @@ async def receive_health_data(request: Request):
 
     try:
         data = await request.json()
-    except Exception as e:
-        import traceback
+    except Exception:
         traceback.print_exc()
-        return StreamingResponse(
-            iter([json.dumps({"error": f"Invalid JSON: {str(e)}"})]),
-            status_code=400,
-            media_type="application/json",
-        )
+        return PlainTextResponse("Invalid request. Please try again.", status_code=400)
 
     _, prompt = build_prompt(data)
 

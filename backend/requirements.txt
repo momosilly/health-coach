@@ -1,6 +1,5 @@
-flask
+fastapi[standard]
 gunicorn
 google-genai
 python-dotenv
-datetime
-google-genai
+slowapi
