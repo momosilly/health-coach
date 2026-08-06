@@ -19,7 +19,7 @@ class HealthServer(
 
     companion object {
         private const val TAG = "HealthServer"
-        private const val BACKEND_URL = "http://192.168.178.173:5000/healthdata"
+        private const val BACKEND_URL = "https://health-coach-api-1032547295021.europe-west4.run.app/healthdata"
     }
 
     override fun serve(session: IHTTPSession): Response {
