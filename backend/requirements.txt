@@ -3,3 +3,7 @@ gunicorn
 google-genai
 python-dotenv
 slowapi
+PyJWT
+cryptography
+google-cloud-firestore
+requests

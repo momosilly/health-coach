@@ -108,7 +108,7 @@ class PermissionActivity : AppCompatActivity() {
         authService?.performTokenRequest(tokenRequest) { tokenResponse, tokenEx ->
             if (tokenResponse?.accessToken != null) {
                 Log.d(TAG, "handleAuthIntent: token exchange success")
-                AuthModule.storePendingToken(applicationContext, tokenResponse.accessToken!!)
+                AuthModule.storePendingToken(applicationContext, tokenResponse.idToken!!)
             } else {
                 Log.e(TAG, "handleAuthIntent: token exchange failed, error=${tokenEx?.errorDescription}")
             }

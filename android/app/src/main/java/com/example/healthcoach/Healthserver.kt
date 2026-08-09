@@ -19,7 +19,7 @@ class HealthServer(
 
     companion object {
         private const val TAG = "HealthServer"
-        private const val BACKEND_URL = "https://health-coach-api-1032547295021.europe-west4.run.app/healthdata"
+        private const val BACKEND_URL = "https://health-coach-api-1032547295021.europe-west4.run.app"
     }
 
     override fun serve(session: IHTTPSession): Response {
@@ -32,6 +32,8 @@ class HealthServer(
         }
 
         return when {
+            uri == "/register"        && method == Method.POST   -> handleRegister(session)
+            uri == "/delete-account"  && method == Method.DELETE -> handleDeleteAccount(session)
             uri == "/healthdata"        && method == Method.POST -> handleHealthData(session)
             uri == "/ping"              && method == Method.GET  -> handlePing()
             uri == "/permissions"       && method == Method.GET  -> handleGetPermissions()
@@ -107,6 +109,41 @@ class HealthServer(
             )
         )
 
+        private fun handleRegister(session: IHTTPSession): Response {
+            Log.d(TAG, "handleRegister called")
+            val authHeader = session.headers["authorization"] ?: ""
+            Log.d(TAG, "handleRegister authHeader: $authHeader")
+            return try {
+                val backendResponse = NetworkClient.postJsonStreaming(
+                    "https://health-coach-api-1032547295021.europe-west4.run.app/register",
+                    emptyMap<String, Any>(),
+                    authHeader
+                )
+                val body = backendResponse.body?.string() ?: "ok"
+                backendResponse.close()
+                corsResponse(newFixedLengthResponse(Response.Status.OK, "text/plain", body))
+            } catch (e: Exception) {
+                Log.e(TAG, "Register failed", e)
+                corsResponse(newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/plain", "Register failed"))
+            }
+        }
+
+        private fun handleDeleteAccount(session: IHTTPSession): Response {
+            val authHeader = session.headers["authorization"] ?: ""
+            return try {
+                val backendResponse = NetworkClient.deleteJson(
+                    "https://health-coach-api-1032547295021.europe-west4.run.app/delete-account",
+                    authHeader
+                )
+                val body = backendResponse.body?.string() ?: "ok"
+                backendResponse.close()
+                corsResponse(newFixedLengthResponse(Response.Status.OK, "text/plain", body))
+            } catch (e: Exception) {
+                Log.e(TAG, "Delete account failed", e)
+                corsResponse(newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/plain", "Delete account failed"))
+            }
+        }
+
     // ── POST /healthdata ─────────────────────────────────────────────────────
     private fun handleHealthData(session: IHTTPSession): Response {
         // 1. Parse request body
@@ -125,6 +162,8 @@ class HealthServer(
             ""
         }
 
+        val authHeader = session.headers["authorization"] ?: ""
+
         // 2. Collect health data (blocking — NanoHTTPD runs on its own thread pool)
         val payload: Map<String, Any> = try {
             runBlocking { collectHealthData(userNote) }
@@ -142,7 +181,7 @@ class HealthServer(
         // 3. Forward to FastAPI backend and STREAM its response back to React Native
         //    as it arrives, instead of waiting for the full body first.
         return try {
-            val backendHttpResponse = NetworkClient.postJsonStreaming(BACKEND_URL, payload)
+            val backendHttpResponse = NetworkClient.postJsonStreaming(BACKEND_URL, payload, authHeader)
 
             if (!backendHttpResponse.isSuccessful) {
                 val errorBody = backendHttpResponse.body?.string() ?: "Unknown backend error"
@@ -265,7 +304,7 @@ class HealthServer(
     private fun corsResponse(response: Response): Response {
         response.addHeader("Access-Control-Allow-Origin",  "*")
         response.addHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        response.addHeader("Access-Control-Allow-Headers", "Content-Type")
+        response.addHeader("Access-Control-Allow-Headers", "Content-Type, Authorization")
         return response
     }
 }

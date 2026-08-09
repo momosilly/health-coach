@@ -48,17 +48,24 @@ object NetworkClient {
     //
     // IMPORTANT: the caller is responsible for closing the returned Response
     // once done reading, to release the underlying connection.
-    fun postJsonStreaming(url: String, payload: Any): Response {
+    fun postJsonStreaming(url: String, payload: Any, authHeader: String = ""): Response {
         val json = gson.toJson(payload)
         val body = json.toRequestBody("application/json; charset=utf-8".toMediaType())
         val request = Request.Builder()
             .url(url)
             .post(body)
+            .apply { if (authHeader.isNotBlank()) header("Authorization", authHeader) }
             .build()
 
-        // .execute() is the synchronous OkHttp call — blocks until headers
-        // arrive, but does NOT wait for the full body. The body stream stays
-        // open for progressive reading.
+        return client.newCall(request).execute()
+    }
+
+    fun deleteJson(url: String, authHeader: String = ""): Response {
+        val request = Request.Builder()
+            .url(url)
+            .delete()
+            .apply { if (authHeader.isNotBlank()) header("Authorization", authHeader) }
+            .build()
         return client.newCall(request).execute()
     }
 }
