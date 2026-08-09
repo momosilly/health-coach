@@ -1,4 +1,6 @@
 import { fetch } from 'expo/fetch';
+import * as SecureStore from 'expo-secure-store';
+import { AUTH_TOKEN_KEY } from '../app/login';
 
 const BASE_URL = 'http://127.0.0.1:8765';
 
@@ -12,12 +14,15 @@ export interface PermissionsResult {
   android_14_plus: boolean;
 }
 
+// ─── Token helper ──────────
+
+async function getAuthHeader(): Promise<Record<string, string>> {
+  const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+}
+
 // ─── ping ──────────
 
-/**
- * Check whether the Kotlin health server is up.
- * Resolves `true` if reachable, `false` otherwise.
- */
 export async function ping(): Promise<boolean> {
   try {
     const res = await fetch(`${BASE_URL}/ping`, { method: 'GET' });
@@ -29,11 +34,6 @@ export async function ping(): Promise<boolean> {
 
 // ─── waitForServer ──────────
 
-/**
- * Poll until the Kotlin server is reachable, then resolve.
- * @param maxAttempts  How many times to ping before giving up (default 20 = ~10 s)
- * @param intervalMs   Delay between attempts in ms (default 500)
- */
 export async function waitForServer(
   maxAttempts = 20,
   intervalMs = 500,
@@ -49,35 +49,59 @@ export async function waitForServer(
 
 // ─── getPermissions ──────────
 
-/**
- * Get the current Health Connect permission status.
- */
 export async function getPermissions(): Promise<PermissionsResult> {
   const res = await fetch(`${BASE_URL}/permissions`, { method: 'GET' });
   if (!res.ok) throw new Error(`HealthServer error ${res.status}: ${await res.text()}`);
   return res.json() as Promise<PermissionsResult>;
 }
 
-
 // ─── openHealthConnect ──────────
 
-/**
- * Tell the Kotlin server to open Health Connect so the user can manage permissions.
- */
 export async function openHealthConnect(): Promise<void> {
   const res = await fetch(`${BASE_URL}/permissions/open`, { method: 'POST' });
   if (!res.ok) throw new Error(`HealthServer error ${res.status}: ${await res.text()}`);
 }
 
-// ─── streamHealthInsight ──────────
+// ─── registerUser ──────────
 
 /**
- * Stream a Gemini coaching insight from the Flask/FastAPI backend.
- * Calls onChunk with each piece of text as it arrives.
- *
- * @param userNote     The user's question.
- * @param onChunk      Called with each text chunk as it streams in.
+ * Called on every app launch after auth check.
+ * Creates or refreshes the user's record in Firestore via the backend.
+ * Never throws — a registration failure should never block the user.
  */
+export async function registerUser(): Promise<void> {
+  try {
+    const authHeader = await getAuthHeader();
+    if (!authHeader['Authorization']) return;
+    const res = await fetch(`${BASE_URL}/register`, {
+      method: 'POST',
+      headers: authHeader,
+    });
+    if (!res.ok) {
+      console.warn('[registerUser] failed:', res.status);
+    }
+  } catch (e) {
+    console.warn('[registerUser] error:', e);
+  }
+}
+
+// ─── deleteAccount ──────────
+
+/**
+ * Called when the user taps 'Delete my account'.
+ * Removes the user from Firestore so they stop being counted in billing.
+ */
+export async function deleteAccount(): Promise<void> {
+  const authHeader = await getAuthHeader();
+  const res = await fetch(`${BASE_URL}/delete-account`, {
+    method: 'DELETE',
+    headers: authHeader,
+  });
+  if (!res.ok) throw new Error(`Delete account failed: ${await res.text()}`);
+}
+
+// ─── streamHealthInsight ──────────
+
 export async function streamHealthInsight(
   userNote: string,
   onChunk: (chunk: string) => void,
@@ -87,29 +111,31 @@ export async function streamHealthInsight(
     throw new Error('Please enter a note before getting insight.');
   }
 
+  const authHeader = await getAuthHeader();
+
   const res = await fetch(`${BASE_URL}/healthdata`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'text/event-stream',
+      ...authHeader,
     },
     body: JSON.stringify({ user_note: userNote }),
   });
 
   if (!res.ok) {
-      const text = await res.text();
-      onError ? onError(text) : onChunk(text);
-      return;
+    const text = await res.text();
+    onError ? onError(text) : onChunk(text);
+    return;
   }
 
-  // Read the response body as a stream
   const reader = res.body!.getReader();
   const decoder = new TextDecoder();
 
   while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value, { stream: true });
-      if (chunk) onChunk(chunk);
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = decoder.decode(value, { stream: true });
+    if (chunk) onChunk(chunk);
   }
 }

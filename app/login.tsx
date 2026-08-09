@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { login, retrievePendingToken } from '../src/auth/appauth';
 import { globalStyles } from '../src/styles';
+import { waitForServer, registerUser } from '../src/HealthClient';
 
 export const AUTH_TOKEN_KEY = 'auth_token';
 
@@ -34,6 +35,7 @@ export default function Login() {
                 try {
                     const token = await retrievePendingToken();
                     await SecureStore.setItemAsync(AUTH_TOKEN_KEY, token);
+                    waitForServer().then(() => registerUser());
                     router.replace('/onboarding');
                 } catch (e: any) {
                     setError('Sign in failed. Please try again.');

@@ -70,11 +70,16 @@ export default function Onboarding() {
             setStep(s => s + 1);
             return;
         }
- 
-        // Final step — open Health Connect, then wait for user to come back via AppState
+
         try {
             setLoading(true);
             setPermError('');
+            const perms = await getPermissions();
+            if (perms.granted > 0) {
+                await AsyncStorage.setItem(getPreference('onboarding_done'), JSON.stringify(true));
+                router.replace('/(tabs)');
+                return;
+            }
             waitingForPermissions.current = true;
             await openHealthConnect();
         } catch (e) {
