@@ -133,7 +133,7 @@ export default function personalization() {
                     </View>
                     <View style={{flex: 1, alignItems: "center"}}>
                         <Text style={styles.text}>Sex</Text>
-                        <Dropdown disabled={!checked} onSelectSex={setSex} />
+                        <Dropdown disabled={!checked} value={sex} onSelectSex={setSex} />
                     </View>
                 </View>
                 <View>

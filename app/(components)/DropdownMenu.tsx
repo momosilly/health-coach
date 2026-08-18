@@ -3,17 +3,16 @@ import { useState } from "react";
 
 type DropdownProps = {
     disabled?: boolean;
+    value?: string;
     onSelectSex?: (sex: string) => void;
 }
 
-export default function Dropdown({ disabled = false, onSelectSex }: DropdownProps) {
+export default function Dropdown({ disabled = false, value = '', onSelectSex }: DropdownProps) {
     const [isExpanded, setIsExpanded] = useState(false);
-    const [sex, setSex] = useState('')
 
-    const selectSex = (value: string) => {
+    const selectSex = (val: string) => {
         setIsExpanded(false);
-        setSex(value);
-        onSelectSex?.(value);
+        onSelectSex?.(val);
     }
 
     return (
@@ -26,21 +25,16 @@ export default function Dropdown({ disabled = false, onSelectSex }: DropdownProp
                         }}
                         enabled={!disabled}    
                     >
-                        <Text>{sex ? sex : 'Select sex'}</Text>
+                        <Text>{value ? value : 'Select sex'}</Text>
                     </OutlinedButton>
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Items>
-                    <DropdownMenuItem
-                        onClick={() => selectSex('Male')}
-                    >
+                    <DropdownMenuItem onClick={() => selectSex('Male')}>
                         <DropdownMenuItem.Text>
                             <Text>Male</Text>
                         </DropdownMenuItem.Text>
                     </DropdownMenuItem>
-
-                    <DropdownMenuItem
-                        onClick={() => selectSex('Female')}
-                    >
+                    <DropdownMenuItem onClick={() => selectSex('Female')}>
                         <DropdownMenuItem.Text>
                             <Text>Female</Text>
                         </DropdownMenuItem.Text>
